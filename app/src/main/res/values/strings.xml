@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">DevSec</string>
+    <string name="permisson1">Camera</string>
+    <string name="permisson2">Audio Recording</string>
+    <string name="permisson3">Read SMS</string>
+    <string name="permisson4">Request Location</string>
+    <string name="permisson5">Read Contacts</string>
+    <string name="permisson0">Nothing</string>
+    <string name="datacollection">DataCollection</string>
+    <string name="cachescan">CacheScan</string>
+    <string name="notification_channel_name">BehaviourCapture</string>
+    <string name="sleep">Ignore Notification for 1 Hour</string>
+    <string name="terms_of_use_for_smu_owned_app">Terms of Use\n(Mobile Application)</string>
+    <string name="disagree">Disagree and Exit</string>
+    <string name="agree">Agree and Proceed</string>
+</resources>

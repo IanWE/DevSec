@@ -1,0 +1,18 @@
+1. License to Use: SMU grants the user a non-exclusive, non-transferable, royalty-free, limited and revocable licence to use this mobile application only for personal and/or non-commercial use in accordance with these terms. Any use of the mobile application in any other manner, including without limitation, any modification or distribution of the mobile application or text, graphics, data, hyperlinks and other content associated therewith is not permitted.
+
+2. User Information: By downloading and using this mobile application, the user consents to the collection, transmission, use and protection of his/her information to SMU. Such information includes all information provided to or collected by this application. Further details of SMU’s privacy policy are found on https://www.smu.edu.sg/privacy-statement. SMU may share anonymised user information with AI Singapore (AISG), a national AI programme launched by the National Research Foundation (NRF), as well as our industry partner. The user shall be responsible for maintaining the confidentiality and security of his/her information transmitted from or stored on his/her mobile device for the purpose of the mobile application. SMU shall not be responsible in any way for any loss (including loss of the user’s information) arising from the use of the mobile application.
+
+3. Acceptable Use: The user agrees not to use the mobile application in violation of any laws or regulations applicable from time to time or to misuse the mobile application in any manner deemed as inappropriate by SMU.
+
+4. Indemnification: The user agrees to indemnify, defend and hold harmless SMU and/or its employees and agents from and against any and all claims, damages (actual and consequential), losses, costs and expenses that is directly or indirectly attributable to the user's breach of these terms, including any use or misuse of this mobile application.
+
+5. Warranties/Representations/Guarantees: SMU provides this mobile application on an “as is” basis and the user agrees that he/she is using the mobile application at his/her own risk. To the fullest extent permitted by law, SMU does not make any warranty, representation or guarantee (whether expressed or implied) that the mobile application and/or its contents is/are of a satisfactory quality, accurate, non-infringing, free of errors and/or able to operate on an uninterrupted basis.
+
+6. Intellectual Property: The logos, graphics, marks used in connection with this mobile application are trademarks or registered trademarks belonging to either SMU or other respective owners. These marks may not be copied, imitated or used (in whole or part) without the prior written permission of SMU or the applicable trademark owner.
+
+7. Amendment of Terms: SMU may amend these terms from time to time without prior notice to the user. The user shall be deemed to have agreed to the amended terms by his/her continued use of this mobile application.
+
+8. Governing Law & Jurisdiction: These terms are governed by the laws of Singapore and the courts of Singapore shall have exclusive jurisdiction for the purpose of any dispute arising out of or in relation to the use of the mobile application and/or these terms.
+
+
+

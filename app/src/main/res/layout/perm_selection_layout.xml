@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    tools:context=".PermissionSelect">
+   <include layout="@layout/title_2"/>
+
+   <Button
+          android:id="@+id/buttona1"
+          android:layout_width="320dp"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:background="@drawable/button_drawable"
+          android:gravity="center_horizontal"
+          android:text="@string/permisson1"
+          android:textColor="#ffffaa"
+          android:layout_marginTop="15dp"
+          android:textSize="16dp" />
+
+   <Button
+          android:id="@+id/buttona2"
+          android:layout_width="320dp"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:background="@drawable/button_drawable"
+          android:gravity="center_horizontal"
+          android:text="@string/permisson2"
+          android:textColor="#ffffaa"
+       android:layout_marginTop="15dp"
+          android:textSize="16dp" />
+
+   <Button
+          android:id="@+id/buttona3"
+          android:layout_width="320dp"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:background="@drawable/button_drawable"
+          android:gravity="center_horizontal"
+          android:text="@string/permisson3"
+          android:textColor="#ffffaa"
+          android:layout_marginTop="15dp"
+          android:textSize="16dp" />
+
+   <Button
+          android:id="@+id/buttona4"
+          android:layout_width="320dp"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:background="@drawable/button_drawable"
+          android:gravity="center_horizontal"
+          android:text="@string/permisson4"
+          android:textColor="#ffffaa"
+          android:layout_marginTop="15dp"
+          android:textSize="16dp" />
+
+   <Button
+          android:id="@+id/buttona5"
+          android:layout_width="320dp"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:background="@drawable/button_drawable"
+          android:gravity="center_horizontal"
+          android:text="@string/permisson5"
+          android:textColor="#ffffaa"
+          android:layout_marginTop="15dp"
+          android:textSize="16dp" />
+
+   <Button
+          android:id="@+id/buttona0"
+          android:layout_width="380dp"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center_horizontal"
+          android:background="@drawable/button_drawable"
+          android:gravity="center_horizontal"
+          android:text="@string/permisson0"
+          android:textColor="#ffffff"
+       android:layout_marginTop="60dp"
+       android:layout_marginBottom="60dp"
+          android:textSize="16dp" />
+</LinearLayout>
