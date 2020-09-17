@@ -11,6 +11,7 @@ import android.app.job.JobService;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.TrafficStats;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -30,6 +31,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import static com.SMU.DevSec.CacheScan.answered;
+import static com.SMU.DevSec.CacheScan.mContext;
+import static com.SMU.DevSec.CacheScan.notification;
+import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.MainActivity.collect_only;
 import static com.SMU.DevSec.MainActivity.infering;
 
@@ -40,6 +45,8 @@ public class SideChannelJob extends Service {
     ArrayList<SideChannelValue> sideChannelValues;
     public static ArrayList<GroundTruthValue> groundTruthValues;
     public static ArrayList<UserFeedback> userFeedbacks;
+    public static ArrayList<CompilerValue> compilerValues;
+    public static ArrayList<FrontAppValue> frontAppValues;
     int scValueCount = 1;
     int index = 1;
     long cumulativeTime;
@@ -47,6 +54,7 @@ public class SideChannelJob extends Service {
     private static final String CHANNEL_ID = "e.smu.devsec";
     private static final String description =  "Collecting Data";
     CacheScan cs=null;
+
 
     static Lock locker = new ReentrantLock();
 
@@ -106,7 +114,9 @@ public class SideChannelJob extends Service {
                     int count = 0;
                     sideChannelValues = new ArrayList<>();
                     groundTruthValues = new ArrayList<>();
+                    compilerValues = new ArrayList<>();
                     userFeedbacks = new ArrayList<>();
+                    frontAppValues = new ArrayList<>();
                     StorageManager storageManager =
                             (StorageManager) getSystemService(Context.STORAGE_SERVICE);
                     BatteryManager batteryManager =
@@ -125,31 +135,75 @@ public class SideChannelJob extends Service {
                                 SideChannelValue sideChannelValue = new SideChannelValue();
                                 sideChannelValue.setSystemTime(System.currentTimeMillis());
                                 sideChannelValue.setVolume(j);
-                                sideChannelValue.setAllocatableBytes(storageManager.
-                                        getAllocatableBytes(storageManager.getUuidForPath(f)));
-                                sideChannelValue.setCacheQuotaBytes(storageManager.
-                                        getCacheQuotaBytes(storageManager.getUuidForPath(f)));
-                                sideChannelValue.setCacheSize(storageManager.
-                                        getCacheSizeBytes(storageManager.getUuidForPath(f)));
-                                sideChannelValue.setFreeSpace(f.getFreeSpace());
-                                sideChannelValue.setUsableSpace(f.getUsableSpace());
-                                sideChannelValue.setElapsedCpuTime(Process.
-                                        getElapsedCpuTime());
-                                sideChannelValue.setCurrentBatteryLevel(
-                                        computeBatteryLevel(getBaseContext()));
-                                sideChannelValue.setBatteryChargeCounter(batteryManager.
-                                        getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));
-                                sideChannelValue.setMobileTxBytes(TrafficStats.getMobileTxBytes());
-                                sideChannelValue.setTotalTxBytes(TrafficStats.getTotalTxBytes());
-                                sideChannelValue.setMobileTxPackets(TrafficStats.getMobileTxPackets());
-                                sideChannelValue.setTotalTxPackets(TrafficStats.getTotalTxPackets());
-                                sideChannelValue.setMobileRxBytes(TrafficStats.getMobileRxBytes());
-                                sideChannelValue.setTotalRxBytes(TrafficStats.getTotalRxBytes());
-                                sideChannelValue.setMobileRxPackets(TrafficStats.getMobileRxPackets());
-                                sideChannelValue.setTotalRxPackets(TrafficStats.getTotalRxPackets());
+                                //cache
+                                try {
+                                    sideChannelValue.setAllocatableBytes(storageManager.
+                                            getAllocatableBytes(storageManager.getUuidForPath(f)));
+                                    sideChannelValue.setCacheQuotaBytes(storageManager.
+                                            getCacheQuotaBytes(storageManager.getUuidForPath(f)));
+                                    sideChannelValue.setCacheSize(storageManager.
+                                            getCacheSizeBytes(storageManager.getUuidForPath(f)));
+                                }catch (Exception e){
+                                    sideChannelValue.setAllocatableBytes(0);
+                                    sideChannelValue.setCacheQuotaBytes(0);
+                                    sideChannelValue.setCacheSize(0);
+                                    Log.d(TAG,e.toString());
+                                    Log.d(TAG,"Get Cache info failed");
+                                }
+                                //disk
+                                try {
+                                    sideChannelValue.setFreeSpace(f.getFreeSpace());
+                                    sideChannelValue.setUsableSpace(f.getUsableSpace());
+                                }catch (Exception e){
+                                    sideChannelValue.setFreeSpace(0);
+                                    sideChannelValue.setUsableSpace(0);
+                                    Log.d(TAG,e.toString());
+                                    Log.d(TAG,"Get disk info failed");
+                                }
+                                //CPU time
+                                try {
+                                    sideChannelValue.setElapsedCpuTime(Process.
+                                            getElapsedCpuTime());
+                                }catch (Exception e){
+                                    sideChannelValue.setElapsedCpuTime(0);
+                                    Log.d(TAG,e.toString());
+                                    Log.d(TAG,"Get ElapsedCpuTime Failed");
+                                }
+                                //battery
+                                try {
+                                    sideChannelValue.setCurrentBatteryLevel(
+                                            computeBatteryLevel(getBaseContext()));
+                                    sideChannelValue.setBatteryChargeCounter(batteryManager.
+                                            getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));
+                                }catch (Exception e){
+                                    sideChannelValue.setCurrentBatteryLevel(0);
+                                    sideChannelValue.setBatteryChargeCounter(0);
+                                    Log.d(TAG,e.toString());
+                                    Log.d(TAG,"Get Battery info Failed");
+                                }
+                                try {
+                                    sideChannelValue.setMobileTxBytes(TrafficStats.getMobileTxBytes());
+                                    sideChannelValue.setTotalTxBytes(TrafficStats.getTotalTxBytes());
+                                    sideChannelValue.setMobileTxPackets(TrafficStats.getMobileTxPackets());
+                                    sideChannelValue.setTotalTxPackets(TrafficStats.getTotalTxPackets());
+                                    sideChannelValue.setMobileRxBytes(TrafficStats.getMobileRxBytes());
+                                    sideChannelValue.setTotalRxBytes(TrafficStats.getTotalRxBytes());
+                                    sideChannelValue.setMobileRxPackets(TrafficStats.getMobileRxPackets());
+                                    sideChannelValue.setTotalRxPackets(TrafficStats.getTotalRxPackets());
+                                }catch (Exception e){
+                                    sideChannelValue.setMobileTxBytes(0);
+                                    sideChannelValue.setTotalTxBytes(0);
+                                    sideChannelValue.setMobileTxPackets(0);
+                                    sideChannelValue.setTotalTxPackets(0);
+                                    sideChannelValue.setMobileRxBytes(0);
+                                    sideChannelValue.setTotalRxBytes(0);
+                                    sideChannelValue.setMobileRxPackets(0);
+                                    sideChannelValue.setTotalRxPackets(0);
+                                    Log.d(TAG,e.toString());
+                                    Log.d(TAG,"Get Traffic info Failed");
+                                }
                                 sideChannelValues.add(sideChannelValue);
                             }
-                            count++;
                             // Compute cumulative time to collect 100 sets of side channel values
                             long deltaTime = System.currentTimeMillis() - startTime;
                             cumulativeTime = cumulativeTime + deltaTime;
@@ -181,16 +235,23 @@ public class SideChannelJob extends Service {
                             Log.d("debug", "mhy_Exception");
                             Log.d("debug", "mhy_" + e.toString());
                         }
-
+                        count++;
                         // Log.d(TAG, "run: " + count);
                         // Send side channel values to a new thread and start data collection in another
                         // different thread after collecting 1000 sets of side channel values
                         if (count % 1020 == 0) {
                             locker.lock();
-                            new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues, groundTruthValues,userFeedbacks)).start();
+                            new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues, groundTruthValues, userFeedbacks, compilerValues,frontAppValues)).start();
                             locker.unlock();
                             Log.d(TAG, "DB Updated");
+                            //Clear the updated data
+                            insert_locker.lock();//lock until the inserting finished.
                             sideChannelValues = new ArrayList<>();
+                            groundTruthValues = new ArrayList<>();
+                            userFeedbacks = new ArrayList<>();
+                            compilerValues = new ArrayList<>();
+                            frontAppValues = new ArrayList<>();
+                            insert_locker.unlock();
                             index = 1;
                             scValueCount = 0;
                             cumulativeTime = 0;
@@ -263,13 +324,24 @@ public class SideChannelJob extends Service {
     public void onDestroy(){
         super.onDestroy ();
         locker.lock();
-        new Thread(new JobInsertRunnable(getBaseContext(),sideChannelValues, groundTruthValues, userFeedbacks)).start();
+        new Thread(new JobInsertRunnable(getBaseContext(),sideChannelValues, groundTruthValues, userFeedbacks,compilerValues,frontAppValues)).start();
         locker.unlock();
+        insert_locker.lock();//lock until the inserting finished.
         sideChannelValues = new ArrayList<>();
+        groundTruthValues = new ArrayList<>();
+        userFeedbacks = new ArrayList<>();
+        compilerValues = new ArrayList<>();
+        frontAppValues = new ArrayList<>();
+        insert_locker.unlock();
         Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
                 .show();
         Toast.makeText(this, "Stopped data collection", Toast.LENGTH_SHORT)
                 .show();
+        SharedPreferences edit = getBaseContext().getSharedPreferences("user",0);
+        SharedPreferences.Editor editor = edit.edit();
+        editor.putLong("Answered",answered);//record the numbr of notification
+        editor.putLong("Notification",notification);
+        editor.commit();
         continueRun = false;
         pause();
     }

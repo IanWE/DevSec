@@ -107,7 +107,7 @@ class DexFile {
     kInvokeConstructor = 0x0006,  // an invoker for a given constructor.
     kInvokeDirect      = 0x0007,  // an invoker for a direct (special) method.
     kInvokeInterface   = 0x0008,  // an invoker for an interface method.
-    kLast = kInvokeInterface
+    kLast = static_cast<int>(kInvokeInterface)
   };
 
   // Annotation constants.

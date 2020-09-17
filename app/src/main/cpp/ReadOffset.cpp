@@ -1,4 +1,5 @@
 #include <jni.h>
+
 #include <string>
 #include "oat-parser/StringPiece.h"
 #include "oat-parser/oatparser.h"
@@ -8,11 +9,13 @@
 #include <iostream>
 #include <memory>
 #include <dlfcn.h>
-#include "logoutput.h"
+//#include "logoutput.h"
 #include "oat-parser/oat/OATParser.h"
 #include "dexinfo/dexinfo.c"
 #include "fakedl.cpp"
 
+//#include "ReadOffset.h"
+using namespace std;
 jobjectArray Decompress(JNIEnv* env,jstring jstr){
     jclass jniclass = (*env).FindClass("com/SMU/DevSec/CacheScan");
     if (NULL == jniclass) {
@@ -54,9 +57,20 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
     if(jarfile==NULL){
         jarfile = jar_file.c_str();
     }
-    jstring jstr = env->NewStringUTF(jarfile); //turn to jstring
+    LOGD("xxxxxxxxxxxxxxxxxxxx4");
+    jstring jstr = env->NewStringUTF(jarfile);//turn to jstring
     LOGD("Jar File: %s",jarfile);//normally output
     jobjectArray dexlist = Decompress(env,jstr);
+    if(dexlist==NULL){
+        LOGE("1 Cannot decompress dex file!");
+        if(strcmp((char *)"LocationManagerService.java", c[0])==0){
+            Art::OATParser::OatClass oatcls = oat_dex_storages[0]->GetOatClass(4702);//hardcore for huawei
+            Art::OATParser::OatMethod m = oatcls.GetOatMethod(102);
+            addr[current_length] = (size_t)start + m.GetOffset() + oatParser.GetOatHeaderOffset();
+        }
+        return;
+    }
+    LOGD("xxxxxxxxxxxxxxxxxxxx5");
     for(int i=0;i<oat_dex_storages.size();i++){
         vector<vector<string>> func_list;
         vector<string> classnames;
@@ -70,12 +84,12 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
             int found = 0;
             for(int cls=0;cls<func_list.size();cls++) {//find the class
                 if (!strcmp((char *)classnames[cls].c_str(), c[t])){
-                    LOGD("Find Class: %d:%s, include %d functions",cls,classnames[cls].c_str(),func_list[cls].size());
+                    //LOGD("Find Class: %d:%s, include %d functions",cls,classnames[cls].c_str(),func_list[cls].size());
                     //s = strtok(NULL, "_");
                     for (int fc = 0; fc < func_list[cls].size(); fc++) {//find the function
                         //LOGD("Compare Function: %d: %s and %s",func_list[cls].size(),func_list[cls][fc].c_str(), f[t]);
                         if(!strcmp((char *) func_list[cls][fc].c_str(), f[t])) {
-                            LOGD("Find Function: %s",func_list[cls][fc].c_str());//normally output
+                            //LOGD("Find Function: %s",func_list[cls][fc].c_str());//normally output
                             Art::OATParser::OatClass oatcls = oat_dex_storages[i]->GetOatClass(cls);
                             Art::OATParser::OatMethod m = oatcls.GetOatMethod(fc);
                             if(m.GetOffset()!=0) {
@@ -99,18 +113,22 @@ void* ExtractOffset(void* s, const char* filename, char* func){
     void* handle = fake_dlopen(filename, RTLD_NOW);
     if (!handle) {
         LOGE("Get %s address error ", filename);
-        exit(0);
+        void* f = 0;
+        return f;
     }
     size_t offset;
     void* f = fake_dlsym(handle, func, offset);
-    f = (void*)((size_t)s + offset);
-    LOGD("Get %s address: %p", func,f);//0x7a9f98f770,0x7a9f946000  camera:0x7aa099b000 0x7aa09ce514
+    if(f!=0){
+        f = (void*)((size_t)s + offset);
+    }
+    //LOGD("Load %s address: %p", func,f);//0x7a9f98f770,0x7a9f946000  camera:0x7aa099b000 0x7aa09ce514
     return f;//st_value 0x49770 st_value 0x33514
 }
 
 void ReadSo(JNIEnv* env, void* start, size_t* addr, char** funcs, \
         std::string read_file, size_t length, size_t &current_length){
     for(int i=0;i<length;i++){
+        //size_t address = (size_t)ExtractOffset(start,read_file.c_str(),funcs[i]);
         addr[current_length++] = (size_t)ExtractOffset(start,read_file.c_str(),funcs[i]);//find the addr of function in memory;
     //addr[current_length++]=0;
     }
@@ -124,10 +142,18 @@ void ReadOffset(JNIEnv* env, std::string range, std::string offset, size_t* addr
     //get all address list
     //=================Read Offset===============================
     string suffix = filename.substr(filename.find_last_of('.') + 1);
-    LOGD("The suffix is %s", suffix.c_str());
+    //LOGD("The suffix is %s", suffix.c_str());
     //map file
     int fd;
     struct stat sb;
+    if((access(filename.c_str(),F_OK))==-1)
+    {
+        LOGD("Filename %s do not exists",filename.c_str());
+        for(int i=0;i<length;i++){
+            addr[current_length++] = 0;
+        }
+        return;
+    }
     fd = open(filename.c_str(), O_RDONLY);
     fstat(fd, &sb);
     LOGD("size: %d of filename %s",sb.st_size,filename.c_str());
@@ -137,7 +163,7 @@ void ReadOffset(JNIEnv* env, std::string range, std::string offset, size_t* addr
         LOGD("Mapping Error, file is too big or app do not have the permisson!");
         exit(0);
     }
-
+    //fclose(reinterpret_cast<FILE *>(fd));
     if (!strcmp(suffix.c_str(), "oat") || !strcmp(suffix.c_str(), "odex")) {
         ReadOatOffset(env, s, range, addr, funcs, filename, length, current_length);
     }

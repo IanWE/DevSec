@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import static com.SMU.DevSec.MainActivity.name_permisson;
 import static com.SMU.DevSec.MainActivity.previous_name;
 import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
 
@@ -44,19 +43,21 @@ public class MonitorFrontEvent implements Runnable {//deprecated
                 //Log.e("TopPackage Name", topPackageName+' '+//usageStatsMap.get(usageStatsMap.lastKey()).getLastTimeForegroundServiceUsed()+
                 //        usageStatsMap.get(usageStatsMap.lastKey()).getLastTimeUsed());
                 if (!topPackageName.equals(mContext.getPackageName()) &&
-                        name_permisson.containsKey(topPackageName)&&
+                        //name_permisson.containsKey(topPackageName)&&
                         !topPackageName.equals(previous_name)&&
                         !previous_name.equals(mContext.getPackageName())) {
-                        int x = name_permisson.get(topPackageName);
+                        int x = 0;// name_permisson.get(topPackageName);
                         //Log.d("TEST",y+"");
                         switch (x) {//(Integer) name_permisson.get(topPackageName)) {
                             case 0:
                                 return;
                             case 1:
+                                /*
                                 GroundTruthValue groundTruthValue = new GroundTruthValue();
                                 groundTruthValue.setLabels("null");//
                                 groundTruthValue.setSystemTime(System.currentTimeMillis());
                                 groundTruthValues.add(groundTruthValue);
+                                 */
                             default:
                                 getgt();
                         }

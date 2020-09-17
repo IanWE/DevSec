@@ -20,11 +20,10 @@ add_library( # Sets the name of the library.
         # Sets the library as a shared library.
         SHARED
         # Provides a relative path to your source file(s).
-        #fakedl.cpp
-        #logoutput.h
-        #ReadOffset.cpp
         native-lib.cpp
         )
+
+
 
 # OatParser
 add_library(
@@ -57,6 +56,8 @@ set(libflush ${CMAKE_SOURCE_DIR}/libflush/libs/${CMAKE_ANDROID_ARCH_ABI}/libflus
 #include_directories(${CMAKE_SOURCE_DIR}/libflush/libflush/)
 # add_subdirectory(DEX)
 
+#target_include_directories(native-lib PRIVATE ${CMAKE_SOURCE_DIR})
+
 target_link_libraries( # Specifies the target library.
         native-lib
         ${libflush}
@@ -65,6 +66,8 @@ target_link_libraries( # Specifies the target library.
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib}) #NDK
+
+
 
 target_link_libraries(
         liboatparser

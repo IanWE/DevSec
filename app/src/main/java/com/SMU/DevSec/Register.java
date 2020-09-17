@@ -38,24 +38,11 @@ public class Register extends AppCompatActivity{
                         save_information(email);
                         Toast.makeText(getBaseContext(), "Register Successfully.", Toast.LENGTH_SHORT)
                             .show();
-                        finish();}
+                        finish();
+                    }
                     else
                         Toast.makeText(getBaseContext(), "Please input a valid email.", Toast.LENGTH_SHORT)
                             .show();
-                }});
-
-            Button button2 = (Button) findViewById(R.id.buttonr2);
-            button2.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    SharedPreferences edit = getSharedPreferences("user", 0);
-                    String name = edit.getString("RSA","None");
-                    if(name.equals("None"))
-                        Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
-                                .show();
-                    else{
-                        finish();
-                    }
                 }});
         }
 
@@ -82,7 +69,9 @@ public class Register extends AppCompatActivity{
                 SharedPreferences preferences=getSharedPreferences("user", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor=preferences.edit();
                 editor.putString("RSA", afterencrypt);
+                editor.putString("adler",adl.getValue()+"");
                 editor.commit();
+
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (Exception e) {

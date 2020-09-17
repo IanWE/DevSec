@@ -13,4 +13,5 @@
     <string name="terms_of_use_for_smu_owned_app">Terms of Use\n(Mobile Application)</string>
     <string name="disagree">Disagree and Exit</string>
     <string name="agree">Agree and Proceed</string>
+    <string name="Instruction">The app may pop some notifications, please try to respond to it in 10 seconds. For instance, \n (1) if you are sure that you used the coressponding app to trigger the event, press the \"<b><i>Confirm</i></b>\" button.\n  (2) If you didn\'t trigger the event, press the \"<b><i>Deny</i></b>\" button.\n (3) If you are not sure whether you trigered it, press the \"<b><i>I\'m not sure</i></b>\" button.</string>
 </resources>

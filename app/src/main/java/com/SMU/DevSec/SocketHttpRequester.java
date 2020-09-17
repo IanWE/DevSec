@@ -3,19 +3,23 @@ package com.SMU.DevSec;
 import android.content.Context;
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
 /**
  * 上传文件到服务器
  */
@@ -52,7 +56,7 @@ public class SocketHttpRequester {
         return "02:00:00:00:00:00";
     }
 
-    static int uploadFile(File file, String RequestURL, String name)
+    static String uploadFile(File file, String RequestURL, String name)
     {
         String result = null;
         String BOUNDARY =  UUID.randomUUID().toString();  //边界标识   随机生成
@@ -124,7 +128,7 @@ public class SocketHttpRequester {
                     }
                     result = sb1.toString();
                     Log.i("uploading", "result: "+ result);
-                    return res;
+                    return result;
                 }
                 else{
                     Log.e("uploading", "request error");
@@ -133,7 +137,49 @@ public class SocketHttpRequester {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return 0;
+        return "0";
+    }
+
+
+
+    static String getCode(String RequestURL, String name) {
+        String result = null;
+        String BOUNDARY = UUID.randomUUID().toString();  //边界标识   随机生成
+        String PREFIX = "--", LINE_END = "\r\n";
+        String CONTENT_TYPE = "multipart/form-data";   //内容类型
+
+        //String mac = getMacAddr();
+        //Log.d("uploading", mac);
+        try {
+            URL url = new URL(RequestURL+name);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setReadTimeout(TIME_OUT);
+            conn.setConnectTimeout(TIME_OUT);
+            conn.setRequestMethod("GET");  //请求方式
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                //请求成功 获得返回的流
+                InputStream is = conn.getInputStream();
+                int ss ;
+                StringBuffer sb1= new StringBuffer();
+                while((ss=is.read())!=-1)
+                {
+                    sb1.append((char)ss);
+                }
+                result = sb1.toString();
+                return result;
+            } else {
+                //请求失败
+                return "0";
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
 

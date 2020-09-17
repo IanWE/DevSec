@@ -9,8 +9,10 @@
 
 #define TAG_NAME "fake_dlfcn"
 
-#define log_info(fmt,args...) __android_log_print(ANDROID_LOG_INFO, TAG_NAME, (const char *) fmt, ##args)
+//#define log_info(fmt,args...) __android_log_print(ANDROID_LOG_INFO, TAG_NAME, (const char *) fmt, ##args)
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)
+
+#define log_info(...)
 
 #ifdef LOG_DBG
 #define log_dbg log_info

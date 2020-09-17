@@ -22,6 +22,7 @@ typedef int16_t             s2;
 typedef int32_t             s4;
 typedef int64_t             s8;
 
+using namespace std;
 
 typedef struct {
     char dex[3];
@@ -340,4 +341,5 @@ void help_show_message()
     fprintf(stderr, " options:\n");
     fprintf(stderr, "    -V             print verbose information\n");
 }
+vector<vector<string>> dexparse(const char *dexfile, vector<string> &classnames);
 #endif //CCATTACK_DEXINFO_H

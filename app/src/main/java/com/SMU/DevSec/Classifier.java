@@ -16,8 +16,6 @@ import static com.SMU.DevSec.SideChannelContract.CLASSES;
 
 
 //import static com.DevSec.acronisdc.MainActivity.module;
-
-
 class Classifier implements Runnable {
     Context context;
     TextView prediction;

@@ -5,16 +5,26 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static com.SMU.DevSec.SideChannelJob.locker;
+import static com.SMU.DevSec.Utils.DATABASE_FILENAME;
+import static com.SMU.DevSec.Utils.DATABASE_PATH;
 
 class JobInsertRunnable implements Runnable {
     Context context;
     ArrayList<SideChannelValue> sideChannelValues;
     ArrayList<GroundTruthValue> groundTruthValues;
     ArrayList<UserFeedback> userFeedbacks;
+    ArrayList<FrontAppValue> frontAppValues;
+    private ArrayList<CompilerValue> compilerValues;
     SQLiteDatabase db;
     ContentValues values;
     long startTime;
+    static Lock insert_locker = new ReentrantLock();
 
     private static final String TAG = "JobInsertRunnable";
     /**
@@ -24,11 +34,14 @@ class JobInsertRunnable implements Runnable {
      * @param sideChannelValues: ArrayList of SideChannelValue objects to be inserted into the database
      */
     public JobInsertRunnable(Context context, ArrayList<SideChannelValue> sideChannelValues,
-                             ArrayList<GroundTruthValue> groundTruthValues,ArrayList<UserFeedback> userFeedbacks) {
+                             ArrayList<GroundTruthValue> groundTruthValues,ArrayList<UserFeedback> userFeedbacks,
+                             ArrayList<CompilerValue> compilerValues, ArrayList<FrontAppValue> frontAppValues) {
         this.context = context;
-        this.sideChannelValues = sideChannelValues;
+        this.sideChannelValues =  sideChannelValues;
         this.groundTruthValues = groundTruthValues;
         this.userFeedbacks = userFeedbacks;
+        this.compilerValues = compilerValues;
+        this.frontAppValues = frontAppValues;
     }
 
     /**
@@ -36,49 +49,52 @@ class JobInsertRunnable implements Runnable {
      */
     public void run() {
         // Start timing the entire process and open the database
+        insert_locker.lock();//locked here, in case that other thread delete the ArrayList
         startTime = System.currentTimeMillis();
         db = context.openOrCreateDatabase("SideScan.db", Context.MODE_PRIVATE, null);
         // DB transaction for faster batch insertion of data into database
         db.beginTransaction();
         values = new ContentValues();
-        for (SideChannelValue sideChannelValue : sideChannelValues) {
-            values.put(SideChannelContract.Columns.SYSTEM_TIME,
-                    sideChannelValue.getSystemTime());
-            values.put(SideChannelContract.Columns.VOLUME,
-                    sideChannelValue.getVolume());
-            values.put(SideChannelContract.Columns.ALLOCATABLE_BYTES,
-                    sideChannelValue.getAllocatableBytes());
-            values.put(SideChannelContract.Columns.CACHE_QUOTA_BYTES,
-                    sideChannelValue.getCacheQuotaBytes());
-            values.put(SideChannelContract.Columns.CACHE_SIZE,
-                    sideChannelValue.getCacheSize());
-            values.put(SideChannelContract.Columns.FREE_SPACE,
-                    sideChannelValue.getFreeSpace());
-            values.put(SideChannelContract.Columns.USABLE_SPACE,
-                    sideChannelValue.getUsableSpace());
-            values.put(SideChannelContract.Columns.ELAPSED_CPU_TIME,
-                    sideChannelValue.getElapsedCpuTime());
-            values.put(SideChannelContract.Columns.CURRENT_BATTERY_LEVEL,
-                    sideChannelValue.getCurrentBatteryLevel());
-            values.put(SideChannelContract.Columns.BATTERY_CHARGE_COUNTER,
-                    sideChannelValue.getBatteryChargeCounter());
-            values.put(SideChannelContract.Columns.MOBILE_TX_BYTES,
-                    sideChannelValue.getMobileTxBytes());
-            values.put(SideChannelContract.Columns.TOTAL_TX_BYTES,
-                    sideChannelValue.getTotalTxBytes());
-            values.put(SideChannelContract.Columns.MOBILE_TX_PACKETS,
-                    sideChannelValue.getMobileTxPackets());
-            values.put(SideChannelContract.Columns.TOTAL_TX_PACKETS,
-                    sideChannelValue.getTotalTxPackets());
-            values.put(SideChannelContract.Columns.MOBILE_RX_BYTES,
-                    sideChannelValue.getMobileRxBytes());
-            values.put(SideChannelContract.Columns.TOTAL_RX_BYTES,
-                    sideChannelValue.getTotalRxBytes());
-            values.put(SideChannelContract.Columns.MOBILE_RX_PACKETS,
-                    sideChannelValue.getMobileRxPackets());
-            values.put(SideChannelContract.Columns.TOTAL_RX_PACKETS,
-                    sideChannelValue.getTotalRxPackets());
-            db.insert(SideChannelContract.TABLE_NAME, null, values);
+        if(sideChannelValues!=null&&sideChannelValues.size()!=0) {
+            for (SideChannelValue sideChannelValue : sideChannelValues) {
+                values.put(SideChannelContract.Columns.SYSTEM_TIME,
+                        sideChannelValue.getSystemTime());
+                values.put(SideChannelContract.Columns.VOLUME,
+                        sideChannelValue.getVolume());
+                values.put(SideChannelContract.Columns.ALLOCATABLE_BYTES,
+                        sideChannelValue.getAllocatableBytes());
+                values.put(SideChannelContract.Columns.CACHE_QUOTA_BYTES,
+                        sideChannelValue.getCacheQuotaBytes());
+                values.put(SideChannelContract.Columns.CACHE_SIZE,
+                        sideChannelValue.getCacheSize());
+                values.put(SideChannelContract.Columns.FREE_SPACE,
+                        sideChannelValue.getFreeSpace());
+                values.put(SideChannelContract.Columns.USABLE_SPACE,
+                        sideChannelValue.getUsableSpace());
+                values.put(SideChannelContract.Columns.ELAPSED_CPU_TIME,
+                        sideChannelValue.getElapsedCpuTime());
+                values.put(SideChannelContract.Columns.CURRENT_BATTERY_LEVEL,
+                        sideChannelValue.getCurrentBatteryLevel());
+                values.put(SideChannelContract.Columns.BATTERY_CHARGE_COUNTER,
+                        sideChannelValue.getBatteryChargeCounter());
+                values.put(SideChannelContract.Columns.MOBILE_TX_BYTES,
+                        sideChannelValue.getMobileTxBytes());
+                values.put(SideChannelContract.Columns.TOTAL_TX_BYTES,
+                        sideChannelValue.getTotalTxBytes());
+                values.put(SideChannelContract.Columns.MOBILE_TX_PACKETS,
+                        sideChannelValue.getMobileTxPackets());
+                values.put(SideChannelContract.Columns.TOTAL_TX_PACKETS,
+                        sideChannelValue.getTotalTxPackets());
+                values.put(SideChannelContract.Columns.MOBILE_RX_BYTES,
+                        sideChannelValue.getMobileRxBytes());
+                values.put(SideChannelContract.Columns.TOTAL_RX_BYTES,
+                        sideChannelValue.getTotalRxBytes());
+                values.put(SideChannelContract.Columns.MOBILE_RX_PACKETS,
+                        sideChannelValue.getMobileRxPackets());
+                values.put(SideChannelContract.Columns.TOTAL_RX_PACKETS,
+                        sideChannelValue.getTotalRxPackets());
+                db.insert(SideChannelContract.TABLE_NAME, null, values);
+            }
         }
         // Ground Truth insertion
         if(groundTruthValues.size()!=0) {
@@ -86,8 +102,6 @@ class JobInsertRunnable implements Runnable {
             for (GroundTruthValue groundTruthValue : groundTruthValues) {
                 values.put(SideChannelContract.Columns.SYSTEM_TIME,
                         groundTruthValue.getSystemTime());
-                values.put(SideChannelContract.Columns.CURRENT_APP,
-                        groundTruthValue.getCurrentApp());
                 values.put(SideChannelContract.Columns.LABELS,
                         groundTruthValue.getLabels());
                 db.insert(SideChannelContract.GROUND_TRUTH, null, values);
@@ -103,13 +117,39 @@ class JobInsertRunnable implements Runnable {
                 db.insert(SideChannelContract.USER_FEEDBACK, null, values);
             }
         }
-
+        if(compilerValues.size()!=0) {
+            values = new ContentValues();
+            for (CompilerValue compilerValue: compilerValues) {
+                values.put(SideChannelContract.Columns.SYSTEM_TIME,
+                        compilerValue.getSystemTime());
+                values.put(SideChannelContract.Columns.THRESHOLDS,
+                        compilerValue.getThresholds());
+                values.put(SideChannelContract.Columns.FUNCTIONS,
+                        compilerValue.getFunctions());
+                //Log.d("XXXXXXXXX",compilerValue.getSystemTime()+"   "+
+                //        compilerValue.getFunctions());
+                db.insert(SideChannelContract.SIDE_COMPILER, null, values);
+            }
+        }
+        if(frontAppValues.size()!=0) {
+            values = new ContentValues();
+            for (FrontAppValue frontAppValue: frontAppValues) {
+                values.put(SideChannelContract.Columns.SYSTEM_TIME,
+                        frontAppValue.getSystemTime());
+                values.put(SideChannelContract.Columns.CURRENT_APP,
+                        frontAppValue.getCurrentApp());
+                db.insert(SideChannelContract.FRONT_APP, null, values);
+            }
+        }
         db.setTransactionSuccessful();
         db.endTransaction();
-
         db.close();
-
         long deltaTime = System.currentTimeMillis() - startTime;
+        boolean ifcompress = Utils.checkfile(context);
+        insert_locker.unlock();
+        if(ifcompress) {//if the db is large than limit size, compress it.
+            Utils.compress(context);
+        }
         Log.d(TAG, "Time taken for DB storage (ms): " + deltaTime);
     }
 }

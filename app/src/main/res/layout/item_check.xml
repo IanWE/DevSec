@@ -4,7 +4,6 @@
     android:layout_height="wrap_content"
     android:layout_marginLeft="20dp"
     android:layout_marginRight="20dp">
-
     <TextView
         android:id="@+id/tv_title"
         android:layout_width="wrap_content"
@@ -15,27 +14,13 @@
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginTop="25dp"/>
-
-    <TextView
-        android:id="@+id/tv_content"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tv_title"
-        android:layout_marginLeft="15dp"
-        android:layout_marginRight="15dp"
-        android:layout_marginTop="20dp"
-        android:textSize="16sp"
-        android:textColor="#282828"
-        android:lineSpacingMultiplier="1.2"
-        android:scrollbars = "vertical"
-        />
     <View
         android:id="@+id/view_1"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#E7E7E7"
         android:layout_below="@+id/tv_title"
-        android:layout_marginTop="550dp"/>
+        android:layout_marginTop="10dp"/>
     <View
         android:id="@+id/view_2"
         android:layout_width="1dp"
@@ -49,12 +34,11 @@
         android:layout_height="wrap_content"
         android:text="@string/disagree"
         android:textStyle="bold"
-        android:textColor="#282828"
+        android:textColor="#B0171F"
         android:layout_toLeftOf="@+id/view_2"
-        android:layout_marginRight="50dp"
+        android:layout_marginRight="40dp"
         android:layout_below="@+id/view_1"
         android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
         android:padding="8dp"/>
 
     <Button
@@ -63,12 +47,24 @@
         android:layout_height="wrap_content"
         android:text="@string/agree"
         android:textStyle="bold"
-        android:textColor="#28F50F"
+        android:textColor="#282828"
         android:layout_toRightOf="@+id/view_2"
-        android:layout_marginLeft="50dp"
+        android:layout_marginLeft="40dp"
         android:layout_below="@+id/view_1"
         android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
         android:padding="8dp"
+        />
+    <TextView
+        android:id="@+id/tv_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_agree"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="20dp"
+        android:textSize="16sp"
+        android:textColor="#282828"
+        android:lineSpacingMultiplier="1.2"
+        android:scrollbars = "vertical"
         />
 </RelativeLayout>

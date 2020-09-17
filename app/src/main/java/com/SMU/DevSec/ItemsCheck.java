@@ -62,7 +62,7 @@ public class ItemsCheck {
             TextView tvCancel = window.findViewById(R.id.tv_cancel);
             TextView tvAgree = window.findViewById(R.id.tv_agree);
             String str = readSaveFile("items.txt",mContext);
-            Log.d(TAG,str);
+            //Log.d(TAG,str);
             SpannableStringBuilder ssb = new SpannableStringBuilder();
             ssb.append(str);
             /*

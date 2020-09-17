@@ -359,7 +359,7 @@ namespace elfcpp {
         SHT_GNU_INCREMENTAL_GOT_PLT = 0x6fff4703,
         // Object attributes.
                 SHT_GNU_ATTRIBUTES = 0x6ffffff5,
-        // GNU style dynamic hash table.
+        // GNU styles dynamic hash table.
                 SHT_GNU_HASH = 0x6ffffff6,
         // List of prelink dependencies.
                 SHT_GNU_LIBLIST = 0x6ffffff7,
@@ -910,7 +910,7 @@ namespace elfcpp {
         // the bit number to test if enabled in the bitmask.
                 NT_GNU_HWCAP = 2,
         // The build ID as set by the linker's --build-id option.  The
-        // format of the descriptor depends on the build ID style.
+        // format of the descriptor depends on the build ID styles.
                 NT_GNU_BUILD_ID = 3,
         // The version of gold used to link.  Th descriptor is just a
         // string.

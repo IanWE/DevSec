@@ -6,6 +6,8 @@ public class SideChannelContract {
     static final String TABLE_NAME = "Side_Channel_Info";
     static final String GROUND_TRUTH = "Ground_Truth";
     static final String USER_FEEDBACK = "User_Feedback";
+    static final String SIDE_COMPILER = "Side_Compiler";
+    static final String FRONT_APP = "Front_App";
     /**
      * Static class to return column names for the database
      */
@@ -35,19 +37,21 @@ public class SideChannelContract {
         public static final String LABELS = "Labels";
         //user feedback
         public static final String CHOICES = "Choices";
+        //side compiler
+        public static final String FUNCTIONS = "Functions";
+        public static final String THRESHOLDS = "Thresholds";
+
         private Columns() {}
             // private constructor to prevent instantiation
         }
-
-
 
         public static String[] CLASSES = new String[]{
                 "QueryInformation",
                 "Camera",
                 //"Calendar",
-                "AudioRecording",
                 //"ReadSMS",
                 "RequestLocation",
+                "AudioRecording",
                 //"ReadContacts"
         };
 }

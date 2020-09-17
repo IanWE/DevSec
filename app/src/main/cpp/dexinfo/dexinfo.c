@@ -27,6 +27,7 @@
 #include "dexinfo.h"
 #include "../oat-parser/logoutput.h"
 #define VERSION "0.1"
+
 using namespace std;
 vector<vector<string>> dexparse(const char *dexfile, vector<string> &classnames)
 {
@@ -72,7 +73,7 @@ vector<vector<string>> dexparse(const char *dexfile, vector<string> &classnames)
     //input=(FILE *)dexfile;
 
 	/* print dex header information */
-	LOGD("[] Dex file: %s\n\n",(unsigned char*)dexfile);
+	LOGD("[] Dex file: %s",(unsigned char*)dexfile);
 
 	memset(&header, 0, sizeof(header));
 	memset(&class_def_item, 0, sizeof(class_def_item));

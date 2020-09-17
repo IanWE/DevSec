@@ -2,8 +2,7 @@ package com.SMU.DevSec;
 
 class GroundTruthValue {
     Long systemTime;
-    String app;
-    String labels;
+    int labels;
     /**
      * Constructor for this POJO class to store side channel values
      */
@@ -18,12 +17,8 @@ class GroundTruthValue {
         this.systemTime = systemTime;
     }
 
-    public void setLabels(String labels){this.labels = labels;}
+    public void setLabels(int labels){this.labels = labels;}
 
-    public String getLabels(){return labels;}
-
-    public String getCurrentApp() {return app;}
-
-    public void setCurrentApp(String CurrentApp){this.app = CurrentApp;}
+    public int getLabels(){return labels;}
 
 }
