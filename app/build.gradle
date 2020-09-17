@@ -7,8 +7,8 @@ android {
         applicationId "com.SMU.DevSec"
         minSdkVersion 28
         targetSdkVersion 29
-        versionCode 16
-        versionName "7.4"
+        versionCode 18
+        versionName "7.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
