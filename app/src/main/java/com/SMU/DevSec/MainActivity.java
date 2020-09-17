@@ -225,9 +225,10 @@ public class MainActivity extends AppCompatActivity {
                 imgdialog.show();
             }
         });
-        TimerManager.getInstance(getBaseContext()).schedule_upload();
+
         //start
         if(trial.equals("1")) {
+            TimerManager.getInstance(getBaseContext()).schedule_upload();
             mSwitch.setChecked(true);
         }
     }
