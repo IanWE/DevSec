@@ -136,7 +136,7 @@ public class TimerManager {
                     Log.d(TAG, "Job cancelled");
                 }
             }
-        }, 30*1000, TIME_INTERVAL*60*1000);
+        }, 60*1000, TIME_INTERVAL*60*1000);
     }
 
     // 增加或减少天数
