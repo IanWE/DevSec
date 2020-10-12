@@ -62,6 +62,12 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
     LOGD("Jar File: %s",jarfile);//normally output
     jobjectArray dexlist = Decompress(env,jstr);
     if(dexlist==NULL){
+        for(int t=0;t<length;t++)
+            addr[current_length++] = 0;
+        return;
+    }
+    /*
+    if(dexlist==NULL){
         LOGE("1 Cannot decompress dex file!");
         if(strcmp((char *)"LocationManagerService.java", c[0])==0){
             Art::OATParser::OatClass oatcls = oat_dex_storages[0]->GetOatClass(4702);//hardcore for huawei
@@ -70,6 +76,7 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
         }
         return;
     }
+     */
     LOGD("xxxxxxxxxxxxxxxxxxxx5");
     for(int i=0;i<oat_dex_storages.size();i++){
         vector<vector<string>> func_list;

@@ -10,17 +10,23 @@ import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.SMU.DevSec.SideChannelJob.compilerValues;
+import static com.SMU.DevSec.SideChannelJob.frontAppValues;
+import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
 import static com.SMU.DevSec.SideChannelJob.locker;
+import static com.SMU.DevSec.SideChannelJob.userFeedbacks;
 import static com.SMU.DevSec.Utils.DATABASE_FILENAME;
 import static com.SMU.DevSec.Utils.DATABASE_PATH;
 
 class JobInsertRunnable implements Runnable {
     Context context;
     ArrayList<SideChannelValue> sideChannelValues;
+    /*
     ArrayList<GroundTruthValue> groundTruthValues;
     ArrayList<UserFeedback> userFeedbacks;
     ArrayList<FrontAppValue> frontAppValues;
     private ArrayList<CompilerValue> compilerValues;
+     */
     SQLiteDatabase db;
     ContentValues values;
     long startTime;
@@ -29,19 +35,20 @@ class JobInsertRunnable implements Runnable {
     private static final String TAG = "JobInsertRunnable";
     /**
      * Constructor for this class
-     *
+
      * @param context:           Android activity context for opening the database
      * @param sideChannelValues: ArrayList of SideChannelValue objects to be inserted into the database
      */
-    public JobInsertRunnable(Context context, ArrayList<SideChannelValue> sideChannelValues,
-                             ArrayList<GroundTruthValue> groundTruthValues,ArrayList<UserFeedback> userFeedbacks,
-                             ArrayList<CompilerValue> compilerValues, ArrayList<FrontAppValue> frontAppValues) {
+    public JobInsertRunnable(Context context, ArrayList<SideChannelValue> sideChannelValues) {
         this.context = context;
         this.sideChannelValues =  sideChannelValues;
+        /*
         this.groundTruthValues = groundTruthValues;
         this.userFeedbacks = userFeedbacks;
         this.compilerValues = compilerValues;
         this.frontAppValues = frontAppValues;
+
+         */
     }
 
     /**
@@ -146,6 +153,10 @@ class JobInsertRunnable implements Runnable {
         db.close();
         long deltaTime = System.currentTimeMillis() - startTime;
         boolean ifcompress = Utils.checkfile(context);
+        groundTruthValues = new ArrayList<>();
+        userFeedbacks = new ArrayList<>();
+        compilerValues = new ArrayList<>();
+        frontAppValues = new ArrayList<>();
         insert_locker.unlock();
         if(ifcompress) {//if the db is large than limit size, compress it.
             Utils.compress(context);

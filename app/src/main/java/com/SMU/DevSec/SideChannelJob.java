@@ -56,6 +56,7 @@ public class SideChannelJob extends Service {
     CacheScan cs=null;
 
 
+
     static Lock locker = new ReentrantLock();
 
     static {
@@ -151,6 +152,7 @@ public class SideChannelJob extends Service {
                                     Log.d(TAG,"Get Cache info failed");
                                 }
                                 //disk
+
                                 try {
                                     sideChannelValue.setFreeSpace(f.getFreeSpace());
                                     sideChannelValue.setUsableSpace(f.getUsableSpace());
@@ -241,16 +243,12 @@ public class SideChannelJob extends Service {
                         // different thread after collecting 1000 sets of side channel values
                         if (count % 1020 == 0) {
                             locker.lock();
-                            new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues, groundTruthValues, userFeedbacks, compilerValues,frontAppValues)).start();
+                            new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues)).start();
                             locker.unlock();
                             Log.d(TAG, "DB Updated");
                             //Clear the updated data
                             insert_locker.lock();//lock until the inserting finished.
                             sideChannelValues = new ArrayList<>();
-                            groundTruthValues = new ArrayList<>();
-                            userFeedbacks = new ArrayList<>();
-                            compilerValues = new ArrayList<>();
-                            frontAppValues = new ArrayList<>();
                             insert_locker.unlock();
                             index = 1;
                             scValueCount = 0;
@@ -281,7 +279,7 @@ public class SideChannelJob extends Service {
             public void run() {
                 try {
                     while (continueRun) {
-                        Thread.sleep(500);
+                        Thread.sleep(1000);
                         cs.Notify();
                     }
                 }catch (InterruptedException e) {
@@ -324,14 +322,10 @@ public class SideChannelJob extends Service {
     public void onDestroy(){
         super.onDestroy ();
         locker.lock();
-        new Thread(new JobInsertRunnable(getBaseContext(),sideChannelValues, groundTruthValues, userFeedbacks,compilerValues,frontAppValues)).start();
+        new Thread(new JobInsertRunnable(getBaseContext(),sideChannelValues)).start();
         locker.unlock();
         insert_locker.lock();//lock until the inserting finished.
         sideChannelValues = new ArrayList<>();
-        groundTruthValues = new ArrayList<>();
-        userFeedbacks = new ArrayList<>();
-        compilerValues = new ArrayList<>();
-        frontAppValues = new ArrayList<>();
         insert_locker.unlock();
         Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
                 .show();

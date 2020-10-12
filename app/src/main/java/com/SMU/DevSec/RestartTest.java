@@ -22,7 +22,7 @@ public class RestartTest extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.restart_application);
         Button restart_button = findViewById(R.id.recheck);
-
+        TimerManager.getInstance(getBaseContext()).uploadLogs();
         restart_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -75,6 +75,11 @@ public class RestartTest extends AppCompatActivity {
                 }
                 if (name.equals("2")) {
                     showToast("Sorry, the device is not compatible with our experiment");
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     finishAffinity();
                     System.exit(0);
                     return;

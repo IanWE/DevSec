@@ -152,7 +152,6 @@ attack_slave(libflush_session_t* libflush_session, int *threshold,
     size_t total_length = length; //record the total length
     length = switch_of_compiler;
     int repetitive_hit = 0;//we use the papram to determine whether we should shrink list.
-    int hit_number = 0;
     //gettimeofday(&tv,NULL);
     libflush_init(&libflush_session, NULL);
     LOGD("[x] attack target %d",length);
@@ -162,12 +161,11 @@ attack_slave(libflush_session_t* libflush_session, int *threshold,
     while(true){
       // if the turns reached 3000 or the same offset was hit more than many times repetitively, shrink the list; 
       //LOGD("Hit number %d, Turns %d",hit_number,turns);
-      if((hit_number>=5000||turns>=10000)&&length>10){
-	LOGD("Hit number %d, Turns %d",hit_number,turns);
+      if((turns>=10000)&&length>10){
+	LOGD("Turns %d",turns);
 	//log_err("Hit number %d, Turns %d",hit_number,turns);
         length = switch_of_compiler;
 	turns = 0;
-	hit_number = 0;
       }
       //Traverse all addresses
       for(int crt_ofs=0; crt_ofs<length; crt_ofs=crt_ofs+1){
@@ -178,15 +176,8 @@ attack_slave(libflush_session_t* libflush_session, int *threshold,
         if (count <= *threshold)
         {
 	  //if it is not a repetitive hit, we change the index. 
-	  if(repetitive_hit != crt_ofs){
-	    repetitive_hit = crt_ofs;
-	    hit_number = 0; 
-	  } else {
-	    hit_number++;
-	  }
           gettimeofday(&tv,NULL);
           //LOGD("cache hit %p %d %ld", (void*) (addr[crt_ofs]),count, tv.tv_sec*1000+tv.tv_usec/1000);
-          //LOGD("cache hit %p %d", (void*) (addr[crt_ofs]),count);
 	  //if current offset is the switch of compiler, expand the list.
 	  if(crt_ofs==switch_of_compiler-1){ 
 	    LOGD("Compiler was activated.");
@@ -195,11 +186,13 @@ attack_slave(libflush_session_t* libflush_session, int *threshold,
 	  }
 	  //record the activation
 	  pthread_mutex_lock(g_lock);
-	  if(crt_ofs<switch_of_compiler-1)
-	    flags[crt_ofs]+=1;
-	  if(*log_length>=299999){
+	  if(crt_ofs<switch_of_compiler-1){
+	    flags[crt_ofs]+=1;//here I have got all functions' activation
+            LOGD("cache hit %d %d", crt_ofs, count);
+	  }
+	  if(*log_length>=280000){
 	      LOGD("Log Length is larger than 300000, set to 0.");
-              log_length = 0;
+              *log_length = 0;
 	  }
 	  times[*log_length] = tv.tv_sec*1000+tv.tv_usec/1000;
 	  thresholds[*log_length] = count;

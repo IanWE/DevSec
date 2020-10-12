@@ -1,7 +1,7 @@
 //
 // Created by Jianwen on 20-8-16.
 //
-#include<jni.h>
+#include <jni.h>
 #include <ostream>
 #include <pthread.h>
 //#include "native-lib.cpp"
@@ -124,4 +124,11 @@ Java_com_SMU_DevSec_CacheScan_setthreshold(JNIEnv *env, jobject thiz,jint new_th
 extern "C" JNIEXPORT jint JNICALL
 Java_com_SMU_DevSec_CacheScan_getthreshold(JNIEnv *env, jobject thiz){
     return threshold;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_SMU_DevSec_CacheScan_filteraddr(JNIEnv *env, jobject thiz, jint index){
+    pthread_mutex_lock(&g_lock);
+    addr[index] = 0;
+    pthread_mutex_unlock(&g_lock);
 }

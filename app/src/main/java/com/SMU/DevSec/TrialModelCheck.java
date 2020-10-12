@@ -14,7 +14,6 @@ public class TrialModelCheck implements Runnable {
     public TrialModelCheck(Context context) {
         this.mContext = context;
     }
-
     @Override
     public void run() {
         SharedPreferences edit = mContext.getSharedPreferences("user", Context.MODE_PRIVATE);
@@ -26,7 +25,8 @@ public class TrialModelCheck implements Runnable {
                 return;
             }
             Log.d("TrialModelCheck", code);
-            if (code != null && code.equals("1")) {
+            code = code.split("F")[0].split("T")[0].split("P")[0];//For example, it return a code with 1,3_4
+            if (code != null && (code.equals("1")||code.equals("2"))) {
                 SharedPreferences.Editor editor = edit.edit();
                 editor.putString("trialmodel", code);
                 trial = code;

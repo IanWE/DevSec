@@ -44,10 +44,10 @@ public class TimerManager {
     private final String TAG = "TimeManager";
     String requestUrl = "http://202.161.45.163:80/upload/";
     private boolean scheduled = false;
+    private boolean scheduled1 = false;
 
     //时间间隔(一天)
     private static final long PERIOD_DAY = 24 * 60 * 60 * 1000;
-
     private TimerManager(Context context){
         init(context);
     }
@@ -65,8 +65,12 @@ public class TimerManager {
     }
 
     public void schedule() {
+        if(scheduled1)
+           return;
+        scheduled1 = true;
+        Log.d(TAG,"schedule to work to upload at 11 pm");
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 0); //0点
+        calendar.set(Calendar.HOUR_OF_DAY, 23); //0点
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
         Date date = calendar.getTime(); //第一次执行定时任务的时间
@@ -82,6 +86,7 @@ public class TimerManager {
             public void run() {
                 //final File file = new File(DATABASE_PATH + DATABASE_FILENAME);
                 //Log.d("uploading", file.getName());
+                Utils.compress(mContext);
                 if (getwifistate() == 2) {
                     uploadFile();
                 } else
@@ -94,6 +99,7 @@ public class TimerManager {
         if(scheduled)
             return;
         scheduled = true;
+        Log.d(TAG,"schedule to check weather upload every 10 mins");
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0); //0点
         calendar.set(Calendar.MINUTE, 0);
@@ -119,7 +125,7 @@ public class TimerManager {
                     //if there are more than 30 files, stop service;
                 }
                 File[] files = getfilelist();
-                if(files.length>=50&&SideChannelJob.continueRun){
+                if(files.length>=100&&SideChannelJob.continueRun){
                     Intent stop=new Intent (mContext,SideChannelJob.class);
                     if(!check) {
                         return;

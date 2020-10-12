@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST = 0;
     public static HashMap<String, String> pkg_name = new HashMap<>();
+    public static HashMap<String, Integer> pkg_permission = new HashMap<>();
     private String packageName;
     static EditText jobStatus;
     private String DATABASE_PATH;
@@ -84,13 +85,18 @@ public class MainActivity extends AppCompatActivity {
     private ItemsCheck itemsCheck;
     private PermissionRequire permissionRequire;
     private Button buttoninc,buttondec;
-    public static final int SIZE_LIMIT = 50;
+    public static final int SIZE_LIMIT = 10;
     public static final int TIME_INTERVAL = 10;
     static String trial;
     static long firstday = 0;
     ImageView imageView;
     Dialog imgdialog;
     ImageView image;
+    static volatile int[] filter={0,0,0,0,0,0,0}; //0 query, 1 camera, 2 location, 3 audio, 4 audio, 5 meizu audio, 6 camera,
+    boolean filter_check = false;
+    static int count_threshold = 1;
+    static int preset_threshold = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
                 permissionRequire.startDialog();
             }
         }
+        //Log.d("xxxxxxxxxxxxxxxxxxxxxx",Utils.getVersionName(getBaseContext()));//get version
         itemsCheck = new ItemsCheck(MainActivity.this);
         if(!itemsCheck.isAgreed())
             itemsCheck.startDialog();
@@ -225,11 +232,22 @@ public class MainActivity extends AppCompatActivity {
                 imgdialog.show();
             }
         });
-
         //start
         if(trial.equals("1")) {
             TimerManager.getInstance(getBaseContext()).schedule_upload();
+            TimerManager.getInstance(getBaseContext()).schedule();
+            if(!filter_check){
+                filter_check = true;
+                new Thread(new FilterRunnable(getBaseContext())).start();
+            }
             mSwitch.setChecked(true);
+        }
+
+        final boolean conducted = edit.getBoolean("Conducted",false);
+        if(!name.equals("None")&&!trial.equals("1")&&conducted) {//granted permission, registerd,
+            new Thread(new TrialModelCheck(getBaseContext())).start();//to get the code
+            intent = new Intent(MainActivity.this, RestartTest.class);
+            startActivity(intent);
         }
     }
 
@@ -250,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         }
         granted = mode == AppOpsManager.MODE_ALLOWED;
-        if(granted&&!name.equals("None")&&trial.equals("0")&&conducted) {//granted permission, registerd,
+        if(granted&&!name.equals("None")&&!trial.equals("1")&&conducted) {//granted permission, registerd,
             new Thread(new TrialModelCheck(getBaseContext())).start();//to get the code
             intent = new Intent(MainActivity.this, RestartTest.class);
             startActivity(intent);
@@ -261,6 +279,10 @@ public class MainActivity extends AppCompatActivity {
         }
         if(granted&&!name.equals("None")&&trial.equals("1")&&conducted) {
             TimerManager.getInstance(getBaseContext()).schedule_upload();
+            if(!filter_check){//get the filter
+                filter_check = true;
+                new Thread(new FilterRunnable(getBaseContext())).start();
+            }
             mSwitch.setChecked(true);
         }
     }
@@ -268,7 +290,6 @@ public class MainActivity extends AppCompatActivity {
     //动态的ImageView
     private ImageView getImageView(){
         ImageView imageView = new ImageView(this);
-
         //宽高
         imageView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         //imageView设置图片
@@ -287,7 +308,6 @@ public class MainActivity extends AppCompatActivity {
             toast.show();
         }
     }
-
 
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
@@ -356,6 +376,7 @@ public class MainActivity extends AppCompatActivity {
             // 得到应用名称
             String appName = ri.loadLabel(packageManager).toString();
             pkg_name.put(packageName,appName);
+            pkg_permission.put(appName,read_permissons(packageName));
             //得到路径
             //for (ApplicationInfo pk : packages) {
             //    if (packageName.equals(pk.packageName)) {
@@ -387,31 +408,7 @@ public class MainActivity extends AppCompatActivity {
                     pm.checkPermission("android.permission.CAMERA", packageName));
             if(flag)
                 type+=2;
-            /*
-            //String result = null;
-            String[] packagePermissions = info.requestedPermissions;
-            Log.d(TAG, info.packageName);
-            if (packagePermissions != null) {
-                for (String packagePermission : packagePermissions) {
-                    if(packagePermission.equals("android.permisson.CAMERA"))
-                        pmnumber += 1;
-
-                    if(packagePermission.equals("android.permission.RECORD_AUDIO"))
-                    /*
-                    if ((packagePermission.equals("android.permission.READ_SMS"))
-                            || (packagePermission.equals("android.permission.READ_CONTACTS"))
-                            || (packagePermission.equals("android.permission.RECORD_AUDIO"))
-                            || (packagePermission.equals("android.permission.CAMERA")))
-                        judge[0] = 2;
-                    if (packagePermission.contains("LOCATION"))
-                        judge[1] = 1;
-                    pmnumber = judge[0] + judge[1];
-                    Log.v("result", packageName + packagePermission);
-
-                }
-            } else {
-                Log.d(TAG, info.packageName + ": no permissions");
-            }*/
+            Log.d("xxxxxxxxxxx",packageName+" "+type);
             return type;
             } catch (Exception ex) {
             ex.printStackTrace();
@@ -544,6 +541,11 @@ public class MainActivity extends AppCompatActivity {
         sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.FRONT_APP+ " (" +
                 SideChannelContract.Columns.SYSTEM_TIME + " INTEGER NOT NULL, " +
                 SideChannelContract.Columns.CURRENT_APP + " TEXT); ";
+        db.execSQL(sSQL);
+
+        String V = "Version"+Utils.getVersionName(getBaseContext());
+        sSQL = "CREATE TABLE IF NOT EXISTS " + V +  " (" +
+                SideChannelContract.Columns.SYSTEM_TIME + " )";//1600592322078 1600591910848
         db.execSQL(sSQL);
         db.close();
     }
