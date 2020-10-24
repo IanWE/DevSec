@@ -42,7 +42,8 @@ public class TimerManager {
     private final String DATABASE_FILENAME = "SideScan.db";
     private String name;
     private final String TAG = "TimeManager";
-    String requestUrl = "http://202.161.45.163:80/upload/";
+    //String requestUrl = "http://202.161.45.163:80/upload/";
+    String requestUrl = "http://139.180.153.72/";
     private boolean scheduled = false;
     private boolean scheduled1 = false;
 
@@ -68,7 +69,7 @@ public class TimerManager {
         if(scheduled1)
            return;
         scheduled1 = true;
-        Log.d(TAG,"schedule to work to upload at 11 pm");
+        Log.d(TAG,"schedule work to upload at 11 pm");
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 23); //0点
         calendar.set(Calendar.MINUTE, 0);

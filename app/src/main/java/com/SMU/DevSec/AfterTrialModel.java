@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,11 +24,24 @@ public class AfterTrialModel extends AppCompatActivity {
             }
         }.start();
         //Set Conducted
+        /*
         SharedPreferences preferences = getBaseContext().getSharedPreferences("user", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor=preferences.edit();
         editor.putBoolean("Conducted", true);
         editor.commit();
+         */
+        //stop service
+        Intent stop=new Intent (getBaseContext(),SideChannelJob.class);
+        stopService(stop);
+        SideChannelJob.continueRun = false;
 
+        TextView tv = findViewById(R.id.aftermsg);
+        SharedPreferences preferences = getBaseContext().getSharedPreferences("user", Context.MODE_PRIVATE);
+        String trial = preferences.getString("trialmodel","0");
+        String info = "    Thanks for conducting the hardware test. You can restart the app to join the user study now.";
+        if(trial.equals("2"))
+            info = "    Thanks for conducting the hardware test. We are sorry to inform you that your phone is compatible with our userstudy.";
+        tv.setText(info);
         Button finish_button = findViewById(R.id.exit);
         finish_button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -39,7 +53,6 @@ public class AfterTrialModel extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 finishAffinity();
-                //stop service
                 System.exit(0);
             }
         });

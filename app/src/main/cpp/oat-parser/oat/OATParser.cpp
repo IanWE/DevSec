@@ -28,6 +28,10 @@ namespace Art {
         m_oat_end = a_oat + a_size;
     }
 
+    size_t OATParser::Size(){
+        return OATParser::End() - OATParser::Begin();
+    }
+
     OATParser::~OATParser() {
     }
 
@@ -212,7 +216,7 @@ static bool ReadIndexBssMapping(OATParser* oat_file,
         }
     }
     else {
-        LOGD("It's Nonecompiled. \n");
+        //LOGD("It's Nonecompiled. \n");
     }
     return OATParser::OatClass(oat_file_,
                            status,
@@ -226,7 +230,7 @@ static bool ReadIndexBssMapping(OATParser* oat_file,
 const OatMethodOffsets* OATParser::OatClass::GetOatMethodOffsets(uint32_t method_index) const {
   // NOTE: We don't keep the number of methods and cannot do a bounds check for method_index.
   if (methods_pointer_ == nullptr) {
-    LOGE("Null pointer.\n");
+    LOGE("(No this function)Null pointer.\n");
     return nullptr;
   }
   size_t methods_pointer_index;

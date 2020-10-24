@@ -1,7 +1,10 @@
 package com.SMU.DevSec;
 
 public class UserFeedback {
-    Long systemTime;
+    Long arisingtime;
+    String app;
+    int event;
+    Long answeringtime;
     int choice;
     /**
      * Constructor for this POJO class to store side channel values
@@ -9,16 +12,31 @@ public class UserFeedback {
     UserFeedback() {
     }
 
-    public long getSystemTime() {
-        return systemTime;
+    public long getArisingtime() {
+        return arisingtime;
     }
 
-    public void setSystemTime(long systemTime) {
-        this.systemTime = systemTime;
+    public void setArisingtime(long arisingtime) {
+        this.arisingtime = arisingtime;
+    }
+
+    public long getAnsweringtime() {
+        return answeringtime;
+    }
+
+    public void setAnsweringtime(long answeringtime) {
+        this.answeringtime = answeringtime;
     }
 
     public int getChoice() {return choice;}
 
     public void setChoice(int Choice){this.choice = Choice;}
 
+    public int getEvent() {return event;}
+
+    public void setEvent(int event) {this.event = event;}
+
+    public String getApp() {return app;}
+
+    public void setApp(String app) {this.app = app;}
 }

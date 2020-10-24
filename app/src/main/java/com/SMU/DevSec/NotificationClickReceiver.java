@@ -22,22 +22,28 @@ public class NotificationClickReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         //
         Bundle data = intent.getExtras();
+        long arisingtime = data.getLong("arisingtime");
         int event = data.getInt("flag");
+        String app = data.getString("app");
         int ignored = data.getInt("ignored");
+
         locker.lock();
         handled[event] = true;
         locker.unlock();
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         manager.cancel(event);
 
-        if(event==1){
+        if(event==1){//if it is camera event
             lastactivetime = Utils.getCurTimeLong();
         }
         UserFeedback userFeedback = new UserFeedback();//create a feedback
+        userFeedback.setArisingtime(arisingtime);
+        userFeedback.setEvent(event);
+        userFeedback.setApp(app);
+        userFeedback.setAnsweringtime(Utils.getCurTimeLong());
         switch (ignored){
             case 0:
                 Log.d(TAG,"Not sure");
-                userFeedback.setSystemTime(System.currentTimeMillis());
                 userFeedback.setChoice(0);//means you know the event
                 locker.lock();
                 userFeedbacks.add(userFeedback);
@@ -46,7 +52,6 @@ public class NotificationClickReceiver extends BroadcastReceiver {
                 break;
             case 1:
                 Log.d(TAG,"Confirmed");
-                userFeedback.setSystemTime(System.currentTimeMillis());
                 userFeedback.setChoice(1);//means you know the event
                 locker.lock();
                 userFeedbacks.add(userFeedback);
@@ -55,7 +60,6 @@ public class NotificationClickReceiver extends BroadcastReceiver {
                 break;
             case 2:
                 Log.d(TAG,"Cannot Confirm");
-                userFeedback.setSystemTime(System.currentTimeMillis());
                 userFeedback.setChoice(2);//means you know the event
                 locker.lock();
                 userFeedbacks.add(userFeedback);

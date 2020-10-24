@@ -37,6 +37,10 @@ public class SideChannelContract {
         public static final String LABELS = "Labels";
         //user feedback
         public static final String CHOICES = "Choices";
+        public static final String ARISINGTIME = "Arisingtime";
+        public static final String ANSWERINGTIME = "Answeringtime";
+        public static final String EVENT = "Event";
+        public static final String ANSWER = "Answer";
         //side compiler
         public static final String FUNCTIONS = "Functions";
         public static final String THRESHOLDS = "Thresholds";

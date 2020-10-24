@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include "fakedl.h"
 
 #define TAG_NAME "fake_dlfcn"
 

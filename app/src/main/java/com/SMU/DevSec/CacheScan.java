@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Looper;
+import android.os.Parcelable;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -29,6 +30,7 @@ import java.util.TreeMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.NotificationCompat;
 
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
@@ -38,7 +40,9 @@ import static com.SMU.DevSec.MainActivity.audio;
 import static com.SMU.DevSec.MainActivity.camera;
 import static com.SMU.DevSec.MainActivity.count_threshold;
 import static com.SMU.DevSec.MainActivity.filter;
-import static com.SMU.DevSec.MainActivity.firstday;
+import static com.SMU.DevSec.MainActivity.lastday;
+import static com.SMU.DevSec.MainActivity.day;
+import static com.SMU.DevSec.MainActivity.isCollected;
 import static com.SMU.DevSec.MainActivity.location;
 import static com.SMU.DevSec.MainActivity.pkg_name;
 import static com.SMU.DevSec.MainActivity.pkg_permission;
@@ -55,14 +59,11 @@ import static com.SMU.DevSec.SideChannelJob.locker;
 import static java.util.Objects.*;
 
 public class CacheScan {
+    private static CacheScan INSTANCE = null;
     private static final String TAG = "CacheScan";
     static Context mContext;
-    static String target_lib = "services.odex";
-    static String target_func = "0";
-    static String[] target;
-    static String[] ranges;
+    static String[] dexlist;
     static String[] filenames;
-    static String[] offsets;
     static String[] func_lists;
     String app;
     public static boolean ischeckedaddr = false;
@@ -72,83 +73,63 @@ public class CacheScan {
     public boolean reset_thresh = false;
     private long lastcamera = 0;
     private long lastaudio = 0;
-    private String cameraapi = "CameraManager.java_connectCameraServiceLocked";
-    private String audioapi = "_ZN7android5media12IAudioRecordC2Ev";
-    private int Length = 8;
+    private int Length = 4;
     static long notification = 0;
     static long answered = 0;
     //static volatile int semaphore=1;
     boolean filtered = false;
     static ArrayList<String> target_functions = new ArrayList<String>();
     final HashMap<String, String> behaviour_map = new HashMap<String, String>();
-
+    String audioapi = "AudioManager";
+    String cameraapi = "CameraManager";
+    ArrayList<int[]> ALpattern = new ArrayList<int[]>();
+    int[] thresholdforpattern = {99999,99999};
 
     CacheScan(Context context) throws IOException {
         mContext = context;
         init();
     }
 
+
     //6 function
     private void init() throws IOException {
         //exec("cat /proc/`pgrep DevSec`/maps");
         int pid = android.os.Process.myPid();
+        /*
         behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
         behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
         behaviour_map.put(audioapi, "AudioRecorder");
         behaviour_map.put("_ZN7android5media12IAudioRecord11asInterfaceERKNS_2spINS_7IBinderEEE", "AudioRecorder");
         behaviour_map.put(cameraapi, "Camera");
+        */
+        String BehaviorList[] = {"Information","Camera","AudioRecorder","Location"};
         AssetManager am = mContext.getAssets();
-        ArrayList<String> range = new ArrayList<String>();
+        ArrayList<String> dex = new ArrayList<String>();
         ArrayList<String> filename = new ArrayList<String>();
         ArrayList<String> offset = new ArrayList<String>();
         ArrayList<String> func_list = new ArrayList<String>();
         String[] targets = am.list("targets");
         String temp;
-
-        /*
-        int l = targets.length;
-        for(int i=0;i<l;i++)//move so file to the end
-            if (targets[i].equals("zz_camera.so")) {
-                Log.d(TAG,"Move "+targets[i]+" to the list's end");
-                temp = targets[i];
-                for(int j=i+1;j<targets.length;j++) {
-                    targets[j - 1] = targets[j];
-                    //Log.d(TAG, "Move " + targets[j] + " to "+targets[j-1]);
-                }
-                targets[targets.length-1] = temp;
-                l--;
-            }
-         */
         String vendor = BasicInfo.getDeviceBrand();
-
         for (String f : requireNonNull(targets)) {
             Log.d("CacheScan", f);//+ " " + f.substring(f.lastIndexOf(".") + 1));
             if (f.substring(f.lastIndexOf(".") + 1).equals("so")) {
-                //String[] arr = exec(pid, f);//unable to grep file since some reason
                 String oat_target = Utils.readSaveFile("targets/" + f, mContext);
                 String[] arr = oat_target.split(",");
-                offset.add("");
                 StringBuilder funcs = new StringBuilder();
                 for (int i = 1; i < arr.length; i++) {
                     target_functions.add(arr[i]);
-                    if (i == 1) {
+                    if (i == 1) {//the first function do need a comma
                         funcs.append(arr[i]);
-                        continue;
-                    }
-                    if (vendor.equals("meizu") && arr[i].equals("NoneFunction")) {
-                        //Log.d(TAG,"222222222222222222222"+vendor);
-                        funcs.append(",").append("__cfi_check");
                         continue;
                     }
                     funcs.append(",").append(arr[i]);
                 }
                 func_list.add(funcs.toString());
-                range.add("");
-                offset.add("");
+                dex.add("");
                 filename.add(arr[0]); //get the path of library in the android system;
                 //Log.d(TAG, "TTTTTTTTTT "+pid+" funcs:" + funcs.toString() + " " + arr[0] +" "+arr[arr.length - 1].split("\n")[0]);
-            } else if (f.substring(f.lastIndexOf(".") + 1).equals("oat") ||
-                    f.substring(f.lastIndexOf(".") + 1).equals("odex")) {
+            } else if (f.substring(f.lastIndexOf(".") + 1).equals("oat")){
                 String oat_target = Utils.readSaveFile("targets/" + f, mContext);
                 String[] arr = oat_target.split(",");
                 String target_oat = arr[0];
@@ -163,22 +144,27 @@ public class CacheScan {
                     funcs.append(",").append(arr[i]);
                 }
                 func_list.add(funcs.toString());
-                range.add(target_dex);
-                offset.add("");
+                dex.add(target_dex);
                 filename.add(target_oat);
                 //Log.d(TAG, "TTTTTTTTTT "+pid+" funcs:" + funcs.toString() + " " + target_dex +" "+target_oat);
             }
         }
-        ranges = (String[]) range.toArray(new String[targets.length]);
-        offsets = (String[]) offset.toArray(new String[targets.length]);
+        dexlist = (String[]) dex.toArray(new String[targets.length]);
         filenames = (String[]) filename.toArray(new String[targets.length]);
         func_lists = (String[]) func_list.toArray(new String[targets.length]);
         //Log.d(TAG, "Target:" + target_func + " " + target_lib);
-
         SharedPreferences edit = mContext.getSharedPreferences("user",0);
         notification = edit.getLong("Notification",0);
         answered = edit.getLong("Answered",0);
-        firstday = edit.getLong("day", 0);
+
+        lastday = edit.getLong("lastday", 0);
+        day = edit.getLong("day", 0);
+
+        ALpattern.add(Utils.getArray(mContext,"1"));
+        ALpattern.add(Utils.getArray(mContext,"2"));
+        for(int i=0;i<ALpattern.size();i++)
+            thresholdforpattern[i] = Utils.sum(ALpattern.get(i));
+        init(dexlist,filenames,func_lists);//initiate the JNI function
     }
 
     private String[] exec(int pid, String target) {
@@ -258,7 +244,6 @@ public class CacheScan {
             }
         }
     }
-
     /*
     public static void getGroundTruth(int gt){//Should we let the user to choose app?
         String topPackageName = getTopApp();
@@ -269,7 +254,7 @@ public class CacheScan {
         groundTruthValues.add(groundTruthValue);
     }
     */
-    private static String getTopApp() {
+    public static String getTopApp() {
         check = true;
         UsageStatsManager mUsageStatsManager = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);//usagestats
         //Log.e("TopPackage Name", mUsageStatsManager.isAppInactive("e.smu.questlocation")+"");//10
@@ -296,7 +281,11 @@ public class CacheScan {
     }
 
     private void updateUI(final int result) {
-        final long day = System.currentTimeMillis() / (1000 * 60 * 60 * 24) - firstday + 1;
+        final long iday;
+        if(isCollected) {
+            day = day + (System.currentTimeMillis() / (1000 * 60 * 60 * 24) - lastday);
+            lastday = System.currentTimeMillis() / (1000 * 60 * 60 * 24);
+        }
         //Log.d(TAG,day+" "+firstday);
         status[result].post(new Runnable() {
             @Override
@@ -311,15 +300,15 @@ public class CacheScan {
                         status[result].setText("Camera - " + camera);
                         break;
                     case 2:
-                        location++;
-                        status[result].setText("RequestLocation - " + location);
-                        break;
-                    case 3:
                         audio++;
                         status[result].setText("AudioRecoding - " + audio);
                         break;
+                    case 3:
+                        location++;
+                        status[result].setText("RequestLocation - " + location);
+                        break;
                     case 4:
-                        if(firstday!=0)
+                        if(lastday!=0)
                             status[result+1].setText("Day "+day);
                         status[result].setText("# of Notifications/Answered Today - " + notification + "/" + answered);
                         break;
@@ -361,10 +350,10 @@ public class CacheScan {
                             status[result].setText("Camera - " + camera);
                             break;
                         case 2:
-                            status[result].setText("RequestLocation - " + location);
+                            status[result].setText("AudioRecoding - " + audio);
                             break;
                         case 3:
-                            status[result].setText("AudioRecoding - " + audio);
+                            status[result].setText("RequestLocation - " + location);
                             break;
                     }
                 }
@@ -372,28 +361,6 @@ public class CacheScan {
         }
     }
 
-    /*
-        public static void unparsedaddr() {
-            while(getthreshold()==0) {//wait untill threshold initialized
-                Log.d(TAG,"sleep 300 millis and try again.");
-                try {
-                    Thread.sleep(300);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            final int[] thds = thd();
-            final int threshold = getthreshold();
-            if (thds != null) {
-                status[4].post(new Runnable() {
-                    @Override
-                    public void run() {//
-                        status[4].setText("Cache - " + thds[0] + ", Mem - " + thds[2] + " \nThreshold - " + threshold);
-                    }
-                });
-            }
-        }
-    */
     public void showToast(final String text) {
         new Thread() {
             @Override
@@ -410,6 +377,10 @@ public class CacheScan {
         }.start();
     }
 
+    public static int[] getPattern(int c){
+        return GetPattern(c);
+    }
+
     public void Notify() { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
         int[] flags = CacheCheck();
         app = getTopApp(); // get package name
@@ -417,32 +388,23 @@ public class CacheScan {
         if(pkg_permission.containsKey(app)){
             permission_type = pkg_permission.get(app);
         }
+        long time = System.currentTimeMillis();
         FrontAppValue fa = new FrontAppValue();
-        fa.setSystemTime(System.currentTimeMillis());
+        fa.setSystemTime(time);
         fa.setCurrentApp(app);
         insert_locker.lock();
         frontAppValues.add(fa);
         insert_locker.unlock();
         if (flags != null) {//4 5audio 6 camera
-            Log.d(TAG, app + " >>> "+permission_type+" >>>" + flags[0] + ":" + flags[1] + ":" + flags[2] + ":" + flags[3] + ":" + flags[4] + ":" + flags[5] + ":" + flags[6] + "."
-                    + "notification:" + notification + " Compiler :" + flags[7]);
+            Log.d(TAG, app + " >>> "+permission_type+" >>>"
+                    + flags[0] + ":" + flags[1] + ":" + flags[2] + ":" + flags[3] + "."
+                    + "notification:" + notification + " Compiler :" + flags[4]);
             //检查一次, 地址是否都被成功解析
             if (!ischeckedaddr) {
-                int[] addrs = addr();
-                for (int i = 0; i < 4; i++) {
+                int[] addrs = addr();//get the addresses
+                for (int i = 0; i < Length; i++) {
                     unparsedaddr(addrs[i], i);
                 }
-                //filter some addresses
-                if(!filtered){
-                    filtered = true;
-                    for(int ii=0;ii<Length-1;ii++) {
-                        if(filter[ii]==1) {
-                            Log.d(TAG,"Filter "+ii);
-                            filteraddr(ii);
-                        }
-                    }
-                }
-                //unparsedaddr();
                 ischeckedaddr = true;
                 showToast("Job scheduled successfully");
             }
@@ -458,7 +420,6 @@ public class CacheScan {
             if (times != null) {
                 int[] thresholds = GetThresholds();
                 logs = GetLogs();
-                //Log.d(TAG,"ttttttt"+times.length+"  "+logs.length+" "+times[0]+" "+logs[0]);
                 ArrayList<CompilerValue> cvs = new ArrayList<CompilerValue>();
                 for (int i = 0; i < times.length; i++) {
                     CompilerValue cv = new CompilerValue();
@@ -473,54 +434,32 @@ public class CacheScan {
                     insert_locker.unlock();
                 }
             }
-            for (int i = 0; i < Length - 3; i++) {//0-3  5 6
+            for (int i = 0; i < Length; i++) {//0-3  5 6
                 String cur = target_functions.get(i);
-                if (flags[i] != 0 ||
-                        (cur.equals(audioapi) && (flags[i + 1] != 0 || flags[i + 2] != 0)) ||
-                        (cur.equals(cameraapi) && flags[Length - 2]!=0)){//(cur.equals(cameraapi) && app.toUpperCase().contains("CAMERA"))) {//in case system camera do not activate api
-                    //reset the threshold
-                    if(!reset_thresh){
-                        int threshold = getthreshold();
-                        if(threshold!=0) {
-                            Log.d(TAG,"The current threshold "+threshold);
-                            SharedPreferences edit = mContext.getSharedPreferences("user", 0);
-                            int threshold_pre = edit.getInt("threshold", 3000);
-                            SharedPreferences.Editor editor = edit.edit();
-                            Log.d(TAG, "Get the threshold with the lowest count " + threshold_pre);
-                            if(threshold_pre==0){
-                                editor.putInt("threshold", threshold);
-                            }
-                            if (threshold < threshold_pre) {
-                                Log.d(TAG, "Found lower thresh " + threshold);
-                                editor.putInt("threshold", threshold);
-                            } else if (threshold > threshold_pre&&threshold_pre!=0) {
-                                Log.d(TAG, "Current threshold is too big, set it to a previous lower one:" + threshold_pre);
-                                setthreshold(threshold_pre);
-                            }
-                            reset_thresh = true;
-                            editor.apply();
-                            if(preset_threshold!=0){
-                                Log.d(TAG, "Use the pre-set threshold:" + preset_threshold);
-                                setthreshold(preset_threshold);
-                            }
+                if (flags[i] != 0){
+                    if(i==1||i==2){
+                        int[] pattern = getPattern(i);
+                        if( (permission_type&i)!=i){//if app do not have camera permisson, skip
+                            HandleCapture(i);
+                            Log.d(TAG,"app do not have camera permisson, false positive");
+                            continue;
+                        }
+                        if(Utils.pattern_compare(ALpattern.get(i-1),pattern)<thresholdforpattern[i-1]){
+                            HandleCapture(i);
+                            Log.d(TAG,"pattern did not match pattern-"+i);
+                            continue;
                         }
                     }
+                    //record the groundtruth
                     GroundTruthValue groundTruthValue = new GroundTruthValue();
-                    groundTruthValue.setSystemTime(System.currentTimeMillis());
+                    groundTruthValue.setSystemTime(time);
                     groundTruthValue.setLabels(i);
                     insert_locker.lock();
                     groundTruthValues.add(groundTruthValue);
                     insert_locker.unlock();
 
                     if (cur.equals(audioapi)) {
-                        HandleCapture(i + 1);
-                        HandleCapture(i + 2);//null for all device except meizu
-                        if( (permission_type&1)!=1){//if app do not have audio permisson, skip
-                            HandleCapture(i);
-                            Log.d(TAG,"app do not have audio permisson, false positive");
-                            continue;
-                        }
-                        lastaudio = System.currentTimeMillis();
+                        lastaudio = time;
                         if (lastaudio - lastcamera < 2500) {//if the camera follow audio tightly
                             Log.d(TAG, "Skip a audio event" + (lastaudio - lastcamera));
                             HandleCapture(i);
@@ -529,53 +468,33 @@ public class CacheScan {
                     }
                     if (cur.equals(cameraapi))//if camera is active, we should handle audio api, since it will come with camera api
                     {
-                        HandleCapture(Length-2);
-                        if(flags[Length - 2]+flags[i]<count_threshold){
-                            HandleCapture(i);
-                            Log.d(TAG,"activateion value < 2 or do not have camera permisson, false positive");
-                            continue;
-                        }
-                        if( (permission_type&2)!=2){//if app do not have camera permisson, skip
-                            HandleCapture(i);
-                            Log.d(TAG,"app do not have camera permisson, false positive");
-                            continue;
-                        }
-                        lastcamera = Utils.getCurTimeLong();
+                        lastcamera = time;
                         if (lastcamera - lastaudio < 2500) {
                             Log.d(TAG, "Skip a camera event" + (lastcamera - lastaudio));
                             HandleCapture(i);
                             continue;
                         }
-
                     }
-
                     HandleCapture(i);
                     updateUI(i);
-                    //Store the action to database
-                    if(!trial.equals("1"))
-                        continue;
                     Log.d(TAG, app + ":" + target_functions.get(i));//&& flags[i]!=0
-                    if ((cur.equals(cameraapi) && handled[i] && System.currentTimeMillis()-lastactivetime>3000) ||
+                    if ((cur.equals(cameraapi) && handled[i] && time-lastactivetime>3000) ||
                             (cur.equals(audioapi) && handled[i])){  //Generate only one notification at the same time
-                        //Log.d(TAG,"TTTTTTTT permisson camera:"+((type&2)==2)+" audio:"+((type&1)==1)); &&//如果不是由
-                        //                            (Utils.getCurTimeLong() - lastactivetime) > 1000
                         notification++;
                         locker.lock();
                         handled[i] = false;
                         locker.unlock();
+                        //add a user feedback
                         Intent intent = new Intent(mContext, NotificationClickReceiver.class);
-                        intent.putExtra("flag", i);
-                        intent.putExtra("ignored", 0);
+                        intentBuild(intent, time, app, i, 0);
                         PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, i + 5, intent, FLAG_UPDATE_CURRENT);
 
                         Intent intenty = new Intent(mContext, NotificationClickReceiver.class);
-                        intenty.putExtra("flag", i);
-                        intenty.putExtra("ignored", 1);
+                        intentBuild(intent, time, app, i, 1);
                         PendingIntent pendingIntenty = PendingIntent.getBroadcast(mContext, i + 10, intenty, FLAG_UPDATE_CURRENT);
 
                         Intent intentn = new Intent(mContext, NotificationClickReceiver.class);
-                        intentn.putExtra("flag", i);
-                        intentn.putExtra("ignored", 2);
+                        intentBuild(intent, time, app, i, 2);
                         PendingIntent pendingIntentn = PendingIntent.getBroadcast(mContext, i + 15, intentn, FLAG_UPDATE_CURRENT);
                         //send notification
                         String textContent = Utils.getDateToString("yyyy-MM-dd HH:mm:ss") + " " + app + " used " + behaviour_map.get(target_functions.get(i));
@@ -603,11 +522,20 @@ public class CacheScan {
                         builder.setStyle(bigTextStyle);
                         Notification notification = builder.build();
                         NotificationManager mNotificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-                        mNotificationManager.notify(i, notification);
+                        if (mNotificationManager != null) {
+                            mNotificationManager.notify(i, notification);
+                        }
                     }
                 }//if
             }//for i 3
         }
+    }
+
+    private void intentBuild(Intent intent,Long time,String app,int flag,int ignored){
+        intent.putExtra("arisingtime",time);
+        intent.putExtra("app",app);
+        intent.putExtra("flag",flag);
+        intent.putExtra("ignored",ignored);
     }
 
     private String[] exec(String target) {
@@ -636,10 +564,9 @@ public class CacheScan {
         return data.split(" ");
     }
 
-    public native int[] CacheCheck();
+    public static native int[] CacheCheck();
     public native void HandleCapture(int i);
     public native int[] addr();
-    public static native int[] thd();
     public static native int getthreshold();
     public static native int[] GetThresholds();
     public static native long[] GetTimes(); //for compiler
@@ -648,4 +575,6 @@ public class CacheScan {
     public static native void decrease();
     public static native void setthreshold(int new_thresh);
     public static native void filteraddr(int index);
+    public static native void init(String[] dexlist,String[] filename,String[] func_list);
+    public static native int[] GetPattern(int c);
 }

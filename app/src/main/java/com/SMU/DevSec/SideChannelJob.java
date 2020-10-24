@@ -36,7 +36,11 @@ import static com.SMU.DevSec.CacheScan.mContext;
 import static com.SMU.DevSec.CacheScan.notification;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.MainActivity.collect_only;
+import static com.SMU.DevSec.MainActivity.cs;
 import static com.SMU.DevSec.MainActivity.infering;
+import static com.SMU.DevSec.MainActivity.lastday;
+import static com.SMU.DevSec.MainActivity.day;
+import static com.SMU.DevSec.MainActivity.stage;
 
 public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
@@ -53,15 +57,8 @@ public class SideChannelJob extends Service {
     private String currentFront="DevSec";
     private static final String CHANNEL_ID = "e.smu.devsec";
     private static final String description =  "Collecting Data";
-    CacheScan cs=null;
-
-
-
     static Lock locker = new ReentrantLock();
 
-    static {
-        System.loadLibrary("native-lib"); //jni lib to use libflush
-    }
     /**
      *通过通知启动服务
      */
@@ -109,187 +106,222 @@ public class SideChannelJob extends Service {
         Log.d(TAG, "New Thread Created");
         // Send the job to a different thread
         new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    // Initializing primitives and objects
-                    int count = 0;
-                    sideChannelValues = new ArrayList<>();
-                    groundTruthValues = new ArrayList<>();
-                    compilerValues = new ArrayList<>();
-                    userFeedbacks = new ArrayList<>();
-                    frontAppValues = new ArrayList<>();
-                    StorageManager storageManager =
-                            (StorageManager) getSystemService(Context.STORAGE_SERVICE);
-                    BatteryManager batteryManager =
-                            (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
-                    // Loop to collect side channel values via API calls
-                    while (continueRun) {
-                        try {
-                            String[] volumes = (String[]) storageManager.getClass()
-                                    .getMethod("getVolumePaths", new Class[0])
-                                    .invoke(storageManager, new Object[0]);
-                            long startTime = System.currentTimeMillis();
-                            // Loop for storing the side channel values in a
-                            // POJO (SideChannelValue object)
-                            for (int j = 0; j < volumes.length; j++) {
-                                File f = new File(volumes[j]);
-                                SideChannelValue sideChannelValue = new SideChannelValue();
-                                sideChannelValue.setSystemTime(System.currentTimeMillis());
-                                sideChannelValue.setVolume(j);
-                                //cache
-                                try {
-                                    sideChannelValue.setAllocatableBytes(storageManager.
-                                            getAllocatableBytes(storageManager.getUuidForPath(f)));
-                                    sideChannelValue.setCacheQuotaBytes(storageManager.
-                                            getCacheQuotaBytes(storageManager.getUuidForPath(f)));
-                                    sideChannelValue.setCacheSize(storageManager.
-                                            getCacheSizeBytes(storageManager.getUuidForPath(f)));
-                                }catch (Exception e){
-                                    sideChannelValue.setAllocatableBytes(0);
-                                    sideChannelValue.setCacheQuotaBytes(0);
-                                    sideChannelValue.setCacheSize(0);
-                                    Log.d(TAG,e.toString());
-                                    Log.d(TAG,"Get Cache info failed");
-                                }
-                                //disk
-
-                                try {
-                                    sideChannelValue.setFreeSpace(f.getFreeSpace());
-                                    sideChannelValue.setUsableSpace(f.getUsableSpace());
-                                }catch (Exception e){
-                                    sideChannelValue.setFreeSpace(0);
-                                    sideChannelValue.setUsableSpace(0);
-                                    Log.d(TAG,e.toString());
-                                    Log.d(TAG,"Get disk info failed");
-                                }
-                                //CPU time
-                                try {
-                                    sideChannelValue.setElapsedCpuTime(Process.
-                                            getElapsedCpuTime());
-                                }catch (Exception e){
-                                    sideChannelValue.setElapsedCpuTime(0);
-                                    Log.d(TAG,e.toString());
-                                    Log.d(TAG,"Get ElapsedCpuTime Failed");
-                                }
-                                //battery
-                                try {
-                                    sideChannelValue.setCurrentBatteryLevel(
-                                            computeBatteryLevel(getBaseContext()));
-                                    sideChannelValue.setBatteryChargeCounter(batteryManager.
-                                            getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));
-                                }catch (Exception e){
-                                    sideChannelValue.setCurrentBatteryLevel(0);
-                                    sideChannelValue.setBatteryChargeCounter(0);
-                                    Log.d(TAG,e.toString());
-                                    Log.d(TAG,"Get Battery info Failed");
-                                }
-                                try {
-                                    sideChannelValue.setMobileTxBytes(TrafficStats.getMobileTxBytes());
-                                    sideChannelValue.setTotalTxBytes(TrafficStats.getTotalTxBytes());
-                                    sideChannelValue.setMobileTxPackets(TrafficStats.getMobileTxPackets());
-                                    sideChannelValue.setTotalTxPackets(TrafficStats.getTotalTxPackets());
-                                    sideChannelValue.setMobileRxBytes(TrafficStats.getMobileRxBytes());
-                                    sideChannelValue.setTotalRxBytes(TrafficStats.getTotalRxBytes());
-                                    sideChannelValue.setMobileRxPackets(TrafficStats.getMobileRxPackets());
-                                    sideChannelValue.setTotalRxPackets(TrafficStats.getTotalRxPackets());
-                                }catch (Exception e){
-                                    sideChannelValue.setMobileTxBytes(0);
-                                    sideChannelValue.setTotalTxBytes(0);
-                                    sideChannelValue.setMobileTxPackets(0);
-                                    sideChannelValue.setTotalTxPackets(0);
-                                    sideChannelValue.setMobileRxBytes(0);
-                                    sideChannelValue.setTotalRxBytes(0);
-                                    sideChannelValue.setMobileRxPackets(0);
-                                    sideChannelValue.setTotalRxPackets(0);
-                                    Log.d(TAG,e.toString());
-                                    Log.d(TAG,"Get Traffic info Failed");
-                                }
-                                sideChannelValues.add(sideChannelValue);
-                            }
-                            // Compute cumulative time to collect 100 sets of side channel values
-                            long deltaTime = System.currentTimeMillis() - startTime;
-                            cumulativeTime = cumulativeTime + deltaTime;
-                            if (((scValueCount % 60) == 0) && index != 1) {//Do not classiy when there is no sc
-                                //Log.d(TAG, String.valueOf(sideChannelValues.subList(index-60,index)));
-                                //Whether use model to infer
-                                if (!collect_only) {
-                                    //new Thread(new MonitorFrontEvent(getBaseContext())).start();
-                                    if (infering) new Thread(new Classifier(getBaseContext(),
-                                            new ArrayList(sideChannelValues.subList(index - 60, index)))).start();
-                                }
-                                Log.d(TAG, "API Call Batch Count: " + scValueCount +
-                                        ", Cumulative Time (ms): " + cumulativeTime);
-                            }
-                            scValueCount++;
-                            index++;
-
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                            Log.d("debug", "mhy_IllegalAccessException");
-                        } catch (InvocationTargetException e) {
-                            e.printStackTrace();
-                            Log.d("debug", "mhy_InvocationTargetException");
-                        } catch (NoSuchMethodException e) {
-                            e.printStackTrace();
-                            Log.d("debug", "mhy_NoSuchMethodException");
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            Log.d("debug", "mhy_Exception");
-                            Log.d("debug", "mhy_" + e.toString());
-                        }
-                        count++;
-                        // Log.d(TAG, "run: " + count);
-                        // Send side channel values to a new thread and start data collection in another
-                        // different thread after collecting 1000 sets of side channel values
-                        if (count % 1020 == 0) {
-                            locker.lock();
-                            new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues)).start();
-                            locker.unlock();
-                            Log.d(TAG, "DB Updated");
-                            //Clear the updated data
-                            insert_locker.lock();//lock until the inserting finished.
-                            sideChannelValues = new ArrayList<>();
-                            insert_locker.unlock();
-                            index = 1;
-                            scValueCount = 0;
-                            cumulativeTime = 0;
-                            count = 0;
-                        }
-                    }
-                }
-            }).start();
-        // Start scan
-        new Thread(new Runnable() {
             @Override
             public void run() {
-                //ClassCreate
-                try {
-                    if(cs==null)
-                      cs = new CacheScan(getBaseContext());
-                } catch (IOException e) {
-                    e.printStackTrace();
+                // Initializing primitives and objects
+                int count = 0;
+                sideChannelValues = new ArrayList<>();
+                groundTruthValues = new ArrayList<>();
+                compilerValues = new ArrayList<>();
+                userFeedbacks = new ArrayList<>();
+                frontAppValues = new ArrayList<>();
+                StorageManager storageManager =
+                        (StorageManager) getSystemService(Context.STORAGE_SERVICE);
+                BatteryManager batteryManager =
+                        (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
+                // Loop to collect side channel values via API calls
+                while (continueRun) {
+                    try {
+                        String[] volumes = (String[]) storageManager.getClass()
+                                .getMethod("getVolumePaths", new Class[0])
+                                .invoke(storageManager, new Object[0]);
+                        long startTime = System.currentTimeMillis();
+                        // Loop for storing the side channel values in a
+                        // POJO (SideChannelValue object)
+                        for (int j = 0; j < volumes.length; j++) {
+                            File f = new File(volumes[j]);
+                            SideChannelValue sideChannelValue = new SideChannelValue();
+                            sideChannelValue.setSystemTime(System.currentTimeMillis());
+                            sideChannelValue.setVolume(j);
+                            //cache
+                            try {
+                                sideChannelValue.setAllocatableBytes(storageManager.
+                                        getAllocatableBytes(storageManager.getUuidForPath(f)));
+                                sideChannelValue.setCacheQuotaBytes(storageManager.
+                                        getCacheQuotaBytes(storageManager.getUuidForPath(f)));
+                                sideChannelValue.setCacheSize(storageManager.
+                                        getCacheSizeBytes(storageManager.getUuidForPath(f)));
+                            } catch (Exception e) {
+                                sideChannelValue.setAllocatableBytes(0);
+                                sideChannelValue.setCacheQuotaBytes(0);
+                                sideChannelValue.setCacheSize(0);
+                                Log.d(TAG, e.toString());
+                                Log.d(TAG, "Get Cache info failed");
+                            }
+                            //disk
+                            try {
+                                sideChannelValue.setFreeSpace(f.getFreeSpace());
+                                sideChannelValue.setUsableSpace(f.getUsableSpace());
+                            } catch (Exception e) {
+                                sideChannelValue.setFreeSpace(0);
+                                sideChannelValue.setUsableSpace(0);
+                                Log.d(TAG, e.toString());
+                                Log.d(TAG, "Get disk info failed");
+                            }
+                            //CPU time
+                            try {
+                                sideChannelValue.setElapsedCpuTime(Process.
+                                        getElapsedCpuTime());
+                            } catch (Exception e) {
+                                sideChannelValue.setElapsedCpuTime(0);
+                                Log.d(TAG, e.toString());
+                                Log.d(TAG, "Get ElapsedCpuTime Failed");
+                            }
+                            //battery
+                            try {
+                                sideChannelValue.setCurrentBatteryLevel(
+                                        computeBatteryLevel(getBaseContext()));
+                                sideChannelValue.setBatteryChargeCounter(batteryManager.
+                                        getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER));
+                            } catch (Exception e) {
+                                sideChannelValue.setCurrentBatteryLevel(0);
+                                sideChannelValue.setBatteryChargeCounter(0);
+                                Log.d(TAG, e.toString());
+                                Log.d(TAG, "Get Battery info Failed");
+                            }
+                            try {
+                                sideChannelValue.setMobileTxBytes(TrafficStats.getMobileTxBytes());
+                                sideChannelValue.setTotalTxBytes(TrafficStats.getTotalTxBytes());
+                                sideChannelValue.setMobileTxPackets(TrafficStats.getMobileTxPackets());
+                                sideChannelValue.setTotalTxPackets(TrafficStats.getTotalTxPackets());
+                                sideChannelValue.setMobileRxBytes(TrafficStats.getMobileRxBytes());
+                                sideChannelValue.setTotalRxBytes(TrafficStats.getTotalRxBytes());
+                                sideChannelValue.setMobileRxPackets(TrafficStats.getMobileRxPackets());
+                                sideChannelValue.setTotalRxPackets(TrafficStats.getTotalRxPackets());
+                            } catch (Exception e) {
+                                sideChannelValue.setMobileTxBytes(0);
+                                sideChannelValue.setTotalTxBytes(0);
+                                sideChannelValue.setMobileTxPackets(0);
+                                sideChannelValue.setTotalTxPackets(0);
+                                sideChannelValue.setMobileRxBytes(0);
+                                sideChannelValue.setTotalRxBytes(0);
+                                sideChannelValue.setMobileRxPackets(0);
+                                sideChannelValue.setTotalRxPackets(0);
+                                Log.d(TAG, e.toString());
+                                Log.d(TAG, "Get Traffic info Failed");
+                            }
+                            sideChannelValues.add(sideChannelValue);
+                        }
+                        // Compute cumulative time to collect 100 sets of side channel values
+                        long deltaTime = System.currentTimeMillis() - startTime;
+                        cumulativeTime = cumulativeTime + deltaTime;
+                        if (((scValueCount % 60) == 0) && index != 1) {//Do not classiy when there is no sc
+                            //Log.d(TAG, String.valueOf(sideChannelValues.subList(index-60,index)));
+                            //Whether use model to infer
+                            if (!collect_only) {
+                                //new Thread(new MonitorFrontEvent(getBaseContext())).start();
+                                if (infering) new Thread(new Classifier(getBaseContext(),
+                                        new ArrayList(sideChannelValues.subList(index - 60, index)))).start();
+                            }
+                            Log.d(TAG, "API Call Batch Count: " + scValueCount +
+                                    ", Cumulative Time (ms): " + cumulativeTime);
+                        }
+                        scValueCount++;
+                        index++;
+
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                        Log.d("debug", "mhy_IllegalAccessException");
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                        Log.d("debug", "mhy_InvocationTargetException");
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                        Log.d("debug", "mhy_NoSuchMethodException");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Log.d("debug", "mhy_Exception");
+                        Log.d("debug", "mhy_" + e.toString());
+                    }
+                    count++;
+                    // Log.d(TAG, "run: " + count);
+                    // Send side channel values to a new thread and start data collection in another
+                    // different thread after collecting 1000 sets of side channel values
+                    if (count % 1020 == 0) {
+                        locker.lock();
+                        new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues)).start();
+                        locker.unlock();
+                        Log.d(TAG, "DB Updated");
+                        //Clear the updated data
+                        insert_locker.lock();//lock until the inserting finished.
+                        sideChannelValues = new ArrayList<>();
+                        insert_locker.unlock();
+                        index = 1;
+                        scValueCount = 0;
+                        cumulativeTime = 0;
+                        count = 0;
+                    }
                 }
-                //Start Scaning
-                scan(0, CacheScan.ranges, CacheScan.offsets, 1, CacheScan.filenames, CacheScan.func_lists, CacheScan.target_lib, CacheScan.target_func);
             }
         }).start();
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (continueRun) {
-                        Thread.sleep(1000);
-                        cs.Notify();
+        // Start scan
+        if (stage == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    //ClassCreate
+                    try {
+                        if (cs == null) {
+                            cs = new CacheScan(getBaseContext());
+                            Log.d(TAG,"Initialize CacheScan");
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                }catch (InterruptedException e) {
+                    //Start Scaning
+                    //scan( CacheScan.dexlist, CacheScan.filenames, CacheScan.func_lists);
+                    int[] pattern_filter = Utils.getArray(mContext, "ptfilter");
+                    for(int i=0;i<pattern_filter.length;i++)
+                        Log.d(TAG,"ptfilter:"+pattern_filter[i]);
+                    scan(pattern_filter, pattern_filter.length);
+                }
+            }).start();
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        while(cs==null) {
+                            Thread.sleep(1000);
+                        }
+                        while (continueRun) {
+                            Thread.sleep(1000);
+                            cs.Notify();
+                        }
+                    } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
             }).start();
+        }
+        else{
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    //ClassCreate
+                    try {
+                        if (cs == null)
+                            cs = new CacheScan(getBaseContext());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    //Start Scaning
+                    while(stage!=2){
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    trial2();//
+                }
+            }).start();
+        }
     }
 
-    public native String scan(int cpu, String[] range, String[] offset, int fork, String[] filename,String[] func_list,String target_lib, String target_func);
+    public native String scan(int[] pattern,int length);
+    public native void trial2();
     public native void pause();
     /**
      * Method to compute battery level based on API call to BatteryManager
@@ -335,7 +367,9 @@ public class SideChannelJob extends Service {
         SharedPreferences.Editor editor = edit.edit();
         editor.putLong("Answered",answered);//record the numbr of notification
         editor.putLong("Notification",notification);
-        editor.commit();
+        editor.putLong("lastday",lastday);
+        editor.putLong("day",day);
+        editor.apply();
         continueRun = false;
         pause();
     }

@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <sched.h>
+#include <unistd.h>
 #include "libflush.h"
 
 #include "calibrate.h"
@@ -11,7 +12,7 @@
 
 #define TAG_NAME "ARMAGEDDON"
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)
-uint64_t calibrate(libflush_session_t* libflush_session,int* thd)
+uint64_t calibrate(libflush_session_t* libflush_session)
 {
   char buffer[4096] = {0};
   void* address = &buffer[1024];
@@ -29,18 +30,17 @@ uint64_t calibrate(libflush_session_t* libflush_session,int* thd)
   for (unsigned int i = 0; i < CALIBRATION_HISTOGRAM_ENTRIES; i++) { //entries = 100000
       uint64_t time = libflush_reload_address(libflush_session, address);
       if(max_cache<time)
-	max_cache = time;
+	      max_cache = time;
       //hit_histogram[MIN(CALIBRATION_HISTOGRAM_SIZE - 1, time / CALIBRATION_HISTOGRAM_SCALE)]++; //scale = 5 , size = 200 //scale are used to scale the number
       hit_histogram[MIN(CALIBRATION_HISTOGRAM_SIZE, time / CALIBRATION_HISTOGRAM_SCALE)]++; //scale = 5 , size = 200 //scale are used to scale the number
       sched_yield();
   }
-
   // Measure time it takes to access something from memory
   size_t miss_histogram[CALIBRATION_HISTOGRAM_SIZE] = {0};
   for (unsigned int i = 0; i < CALIBRATION_HISTOGRAM_ENTRIES; i++) {
       uint64_t time = libflush_reload_address_and_flush(libflush_session, address);  // flush is available here
       if(max_mem<time)
-	max_mem = time;
+	      max_mem = time;
       //miss_histogram[MIN(CALIBRATION_HISTOGRAM_SIZE - 1, time / CALIBRATION_HISTOGRAM_SCALE)]++; //SIZE is used to cap the maximun;
       miss_histogram[MIN(CALIBRATION_HISTOGRAM_SIZE, time / CALIBRATION_HISTOGRAM_SCALE)]++; //SIZE is used to cap the maximun;
       sched_yield();
@@ -71,27 +71,20 @@ uint64_t calibrate(libflush_session_t* libflush_session,int* thd)
           miss_minimum_index = i;
       }
   }
-  thd[0] = (hit_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
   int temp1 = 0;
   int temp2 = 0;
   for(int i = 0; i < CALIBRATION_HISTOGRAM_SIZE; i++) {
-      if(temp1<=90000){
-	temp1 += hit_histogram[i];
+      if(temp1<=95000){
+	    temp1 += hit_histogram[i];
       	hit_maximum_index = i;
       }
       temp2 += miss_histogram[i];
       if(temp2>100)
-	miss_maximum_index = i;
+	    miss_maximum_index = i;
   }
-  
   uint64_t cache = (hit_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
   uint64_t mem = (miss_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
   uint64_t threshold = mem - (mem - cache) / 2;
-  //uint64_t threshold = cache+CALIBRATION_HISTOGRAM_SCALE;
   LOGD("cache %d, mem %d, max cache %d, max mem %d",cache,mem,max_cache,max_mem);
-  thd[1] = cache;
-  thd[2] = mem;
-  //LOGD("cache %d, mem %d",thd[1],thd[2]);
   return cache;
-  //return threshold;
 }
