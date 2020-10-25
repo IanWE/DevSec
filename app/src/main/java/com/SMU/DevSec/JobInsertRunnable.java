@@ -117,8 +117,14 @@ class JobInsertRunnable implements Runnable {
         if(userFeedbacks.size()!=0) {
             values = new ContentValues();
             for (UserFeedback userFeedback : userFeedbacks) {
-                values.put(SideChannelContract.Columns.SYSTEM_TIME,
-                        userFeedback.getSystemTime());
+                values.put(SideChannelContract.Columns.ARISINGTIME,
+                        userFeedback.getArisingtime());
+                values.put(SideChannelContract.Columns.EVENT,
+                        userFeedback.getEvent());
+                values.put(SideChannelContract.Columns.CURRENT_APP,
+                        userFeedback.getApp());
+                values.put(SideChannelContract.Columns.ANSWERINGTIME,
+                        userFeedback.getAnsweringtime());
                 values.put(SideChannelContract.Columns.CHOICES,
                         userFeedback.getChoice());
                 db.insert(SideChannelContract.USER_FEEDBACK, null, values);

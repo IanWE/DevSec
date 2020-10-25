@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp">
+    <TextView
+        android:id="@+id/stage_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Trial Stage"
+        android:layout_centerHorizontal="true"
+        android:textColor="#282828"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginTop="25dp"/>
+    <View
+        android:id="@+id/view_1"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E7E7E7"
+        android:layout_below="@+id/stage_title"
+        android:layout_marginTop="10dp"/>
+
+    <Button
+        android:id="@+id/next_stage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next"
+        android:textStyle="bold"
+        android:textColor="#282828"
+        android:layout_below="@+id/view_1"
+        android:layout_marginTop="15dp"
+        android:padding="8dp"
+        android:layout_centerHorizontal="true"
+        />
+    <TextView
+        android:id="@+id/stage_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/next_stage"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="20dp"
+        android:textSize="16sp"
+        android:textColor="#282828"
+        android:lineSpacingMultiplier="1.2"
+        android:scrollbars = "vertical"
+        />
+    <View
+        android:id="@+id/view_2"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E7E7E7"
+        android:layout_below="@+id/stage_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"/>
+</RelativeLayout>

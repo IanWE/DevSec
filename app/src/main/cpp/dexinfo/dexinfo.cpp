@@ -25,11 +25,11 @@
 #include <getopt.h>
 #include <vector>
 #include "dexinfo.h"
-#include "../oat-parser/logoutput.h"
+#include "../logoutput.h"
 #define VERSION "0.1"
 
 using namespace std;
-vector<vector<string>> dexparse(const char *dexfile, vector<string> &classnames)
+vector<vector<string>> dexparse(char const *dexfile, vector<string> &classnames)
 {
     //char *dexfile;
 	FILE *input;

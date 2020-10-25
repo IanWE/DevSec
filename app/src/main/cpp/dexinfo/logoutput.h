@@ -1,6 +1,6 @@
 #include <android/log.h>
 
-#define TAG "CacheScan_Main" // 这个是自定义的LOG的标识
+#define TAG "CacheScan_DexInfo" // 这个是自定义的LOG的标识
 
 //#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,TAG ,__VA_ARGS__) // 定义LOGD类型
 #define LOGD(...) __android_log_print(ANDROID_LOG_INFO,TAG ,__VA_ARGS__) // 定义LOGI类型

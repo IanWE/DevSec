@@ -15,10 +15,6 @@
 #include <iostream>
 #include <memory>
 #include <dlfcn.h>
-#include "logoutput.h"
-#include "oat-parser/oat/OATParser.h"
-#include "dexinfo/dexinfo.c"
-#include "fakedl.cpp"
 
 jobjectArray Decompress(JNIEnv* env,jstring jstr);
 
@@ -30,7 +26,9 @@ void* ExtractOffset(void* s, const char* filename, char* func);
 void ReadSo(JNIEnv* env, void* start, size_t* addr, char** funcs, \
         std::string read_file, size_t length, size_t &current_length);
 
-void ReadOffset(JNIEnv* env, std::string range, std::string offset, size_t* addr, char** funcs, \
+void ReadOffset(JNIEnv* env, std::string dexlist, size_t* addr, char** funcs, \
          size_t length, std::string filename);
 
+void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr, char** funcs, \
+        std::string read_file, size_t length, size_t &current_length);
 #endif //DEVSEC_READOFFSET_H

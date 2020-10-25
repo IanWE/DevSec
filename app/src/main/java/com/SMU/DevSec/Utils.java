@@ -1,10 +1,13 @@
 package com.SMU.DevSec;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+
+import org.json.JSONArray;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +19,8 @@ import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.zip.CRC32;
@@ -26,6 +31,7 @@ import java.util.zip.ZipOutputStream;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.SMU.DevSec.MainActivity.SIZE_LIMIT;
+import static com.SMU.DevSec.MainActivity.isCollected;
 
 /**
  * @CreateBy HaiyuKing
@@ -244,6 +250,7 @@ public class Utils {
     }
 
     public static void compress(Context mContext){
+        isCollected = true;
         File database = new File(DATABASE_PATH + TEMP_DATABASE);
         String compressed_filename = getCurTimeLong()/1000+".gz";
         File file = new File(mContext.getFilesDir(),compressed_filename);
@@ -351,5 +358,51 @@ public class Utils {
         }
         String version = packInfo.versionName;
         return version.replace(".","_");
+    }
+
+    public static void saveArray(Context context, int[] intArray, String target) {
+        SharedPreferences prefs = context.getSharedPreferences("pattern", Context.MODE_PRIVATE);
+        JSONArray jsonArray = new JSONArray();
+        for (int b : intArray) {
+            jsonArray.put(b);
+        }
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(target,jsonArray.toString());
+        editor.apply();
+    }
+
+    public static int[] getArray(Context context,String target)
+    {
+        SharedPreferences prefs = context.getSharedPreferences("pattern", Context.MODE_PRIVATE);
+        ArrayList<Integer> arrayList = new ArrayList<Integer>();
+        try {
+            JSONArray jsonArray = new JSONArray(prefs.getString(target, "[]"));
+            for (int i = 0; i < jsonArray.length(); i++) {
+                arrayList.add(jsonArray.getInt(i));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        int[] d = new int[arrayList.size()];
+        for(int i=0;i<arrayList.size();i++)
+            d[i] = arrayList.get(i);
+        return d;
+    }
+
+    static int sum(int[] l){
+        int s = 0;
+        for(int i=0;i<l.length;i++){
+            s += l[i];
+        }
+        return s;
+    }
+
+    static int pattern_compare(int[] o,int[] t){
+        int s = 0;
+        for(int i=0;i<o.length;i++){
+            if(t[i]==1&&o[i]==1)
+                s++;
+        }
+        return s;
     }
 }

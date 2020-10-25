@@ -73,6 +73,8 @@ set(SOVERSION ${SOMAJOR}.${SOMINOR})
 # libfiu
 #WITH_LIBFIU ?= 0
 #FIU_RUN ?= fiu-run -x
+set(WITH_LIBFIU 0)
+set(FIU_RUN " fiu-run -x ")
 
 # set to something != 0 if you want verbose build output
 set(VERBOSE 0)
@@ -81,7 +83,7 @@ set(VERBOSE 0)
 set(COLOR 1)
 
 # android
-set(ANDROID_PLATFORM android-29)
+set(ANDROID_PLATFORM 29)
 
 # thread safe
 set(WITH_PTHREAD 1)
@@ -94,7 +96,8 @@ set(HAVE_PAGEMAP_ACCESS 1)
 set(TIME_SOURCE monotonic_clock)
 
 # use eviction instead of flush
-set(USE_EVICTION 0)
+set(USE_EVICTION 0)#only available for armv7
 
 # Define device
-set(DEVICE_CONFIGURATION default)
+set(DEVICE_CONFIGURATION default)#available only if using eviction
+#set(DEVICE_CONFIGURATION 0)

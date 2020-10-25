@@ -10,7 +10,7 @@ import static com.SMU.DevSec.MainActivity.trial;
 public class TrialModelCheck implements Runnable {
     Context mContext;
     String code = null;
-
+    //no need to get the pass from the server, so remove this class
     public TrialModelCheck(Context context) {
         this.mContext = context;
     }
@@ -25,7 +25,8 @@ public class TrialModelCheck implements Runnable {
                 return;
             }
             Log.d("TrialModelCheck", code);
-            code = code.split("F")[0].split("T")[0].split("P")[0];//For example, it return a code with 1,3_4
+
+            code = code.split("F")[0].split("T")[0].split("P")[0];//For example, it return a code with 1F3_4P120
             if (code != null && (code.equals("1")||code.equals("2"))) {
                 SharedPreferences.Editor editor = edit.edit();
                 editor.putString("trialmodel", code);

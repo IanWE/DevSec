@@ -1,5 +1,6 @@
 package com.SMU.DevSec;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -7,55 +8,53 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.text.SpannableStringBuilder;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import static com.SMU.DevSec.MainActivity.pkg_permission;
 import static com.SMU.DevSec.SideChannelJob.continueRun;
+import static com.SMU.DevSec.MainActivity.stage;
 
 public class TrialModel extends AppCompatActivity {
     final String TAG="TrialModel";
+    int[] flags = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.trial_model_layout);
-
         LogcatHelper.getInstance(getBaseContext()).start();
+        Button start_button = findViewById(R.id.start);
+        //final TrialModelStages tms = new TrialModelStages(TrialModel.this);
+        start_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (CacheScan.CacheCheck() == null) {//check if initiated well.
+                    showToast("App is initializing, try it a bit later");
+                    return;
+                }
+                TrialModelStages.getInstance(TrialModel.this).startDialog();
+            }
+        });
+        stage = 1;//start the service
         Intent begin = new Intent(this, SideChannelJob.class);
-        if (Build.VERSION.SDK_INT >= 26&&!continueRun) {
+        if (!continueRun) {
             continueRun = true;
             startForegroundService(begin);
             Log.d(TAG, "Job scheduled");
             Toast.makeText(this, "Job is scheduling", Toast.LENGTH_SHORT)
                     .show();
         }
-
-        Button finish_button = findViewById(R.id.finish);
-        finish_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SharedPreferences edit = getBaseContext().getSharedPreferences("user", Context.MODE_PRIVATE);
-                String name = edit.getString("trialmodel", "0");
-                //LogcatHelper.getInstance(getBaseContext()).start();
-                Intent stop=new Intent (getBaseContext(),SideChannelJob.class);
-                stopService(stop);
-                continueRun = false;
-                Log.d(TAG,"Stop logging the test");
-                LogcatHelper.getInstance(getBaseContext()).stop();
-                Intent intent = new Intent(TrialModel.this, AfterTrialModel.class);
-                startActivity(intent);
-                //stop service
-            }
-        });
-    }
-
-    public void onDestroy() {
-        finishAffinity();
-        super.onDestroy();
     }
 
     public void showToast(final String text) {
@@ -72,5 +71,10 @@ public class TrialModel extends AppCompatActivity {
                 Looper.loop();
             }
         }.start();
+    }
+
+    public void onDestroy() {
+        finishAffinity();
+        super.onDestroy();
     }
 }

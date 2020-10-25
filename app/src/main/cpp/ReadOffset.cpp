@@ -1,21 +1,20 @@
 #include <jni.h>
 
 #include <string>
-#include "oat-parser/StringPiece.h"
-#include "oat-parser/oatparser.h"
-#include <unistd.h>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <iostream>
 #include <memory>
 #include <dlfcn.h>
-//#include "logoutput.h"
-#include "oat-parser/oat/OATParser.h"
-#include "dexinfo/dexinfo.c"
-#include "fakedl.cpp"
+#include "fakedl.h"
+#include <oat/OATParser.h>
+#include <dexinfo.h>
+#include <sys/mman.h>
+#include <asm-generic/fcntl.h>
+#include <fcntl.h>
+#include "ReadOffset.h"
+#include "logoutput.h"
 
-//#include "ReadOffset.h"
-using namespace std;
+extern int length_of_camera_audio[2];
 jobjectArray Decompress(JNIEnv* env,jstring jstr){
     jclass jniclass = (*env).FindClass("com/SMU/DevSec/CacheScan");
     if (NULL == jniclass) {
@@ -36,7 +35,7 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
         std::string read_file, size_t length, size_t &current_length) {
     LOGD("Parsing Oat:%s",read_file.c_str());
     Art::OATParser oatParser;
-    if (!oatParser.ParseOatFile(read_file)) {
+    if (!oatParser.ParseOatFile(read_file)) {//parse OAT file
         LOGD("Parsing Oat:%s Error!",read_file.c_str());
         return;
     }
@@ -46,9 +45,9 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
     for(size_t t=0; t<length; t++){
         c[t] = strtok(funcs[t], "_");
         f[t] = strtok(NULL,"_");
-        //LOGD("cccc %d %s",t,c[t]);
-        //LOGD("ffff %d %s %s",t,c[t],f[t]);
         addr[current_length+t]=0;
+        if(f[t]==NULL)//if it is only class
+            addr[current_length+t] = reinterpret_cast<size_t>(malloc(sizeof(size_t *) * 1));
     }
     //Read function offset
     std::vector<const Art::OatDexFile*> oat_dex_storages= oatParser.GetOatDexes();
@@ -62,53 +61,62 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
     LOGD("Jar File: %s",jarfile);//normally output
     jobjectArray dexlist = Decompress(env,jstr);
     if(dexlist==NULL){
+        LOGD("Unable to find dex files of %s",read_file.c_str());
         for(int t=0;t<length;t++)
-            addr[current_length++] = 0;
+            addr[current_length+t] = 0;
         return;
     }
-    /*
-    if(dexlist==NULL){
-        LOGE("1 Cannot decompress dex file!");
-        if(strcmp((char *)"LocationManagerService.java", c[0])==0){
-            Art::OATParser::OatClass oatcls = oat_dex_storages[0]->GetOatClass(4702);//hardcore for huawei
-            Art::OATParser::OatMethod m = oatcls.GetOatMethod(102);
-            addr[current_length] = (size_t)start + m.GetOffset() + oatParser.GetOatHeaderOffset();
-        }
-        return;
-    }
-     */
     LOGD("xxxxxxxxxxxxxxxxxxxx5");
     for(int i=0;i<oat_dex_storages.size();i++){
-        vector<vector<string>> func_list;
-        vector<string> classnames;
+        std::vector<std::vector<std::string>> func_list;
+        std::vector<std::string> classnames;
         jstring obj = (jstring)env->GetObjectArrayElement(dexlist,i);
         string dexfile = env->GetStringUTFChars(obj,NULL);
-        func_list = dexparse(dexfile.c_str(),classnames);
+        func_list = dexparse(dexfile.c_str(), classnames);
         //func_list is all func in dex file, funcs is our target function
         for(size_t t=0; t<length; t++) { //
-            if(addr[current_length+t]!=0)
+            if(addr[current_length+t]!=0&&f[t]!=NULL)//if it is a specific function
                 continue;
-            int found = 0;
+            int k = 0;
             for(int cls=0;cls<func_list.size();cls++) {//find the class
                 if (!strcmp((char *)classnames[cls].c_str(), c[t])){
-                    //LOGD("Find Class: %d:%s, include %d functions",cls,classnames[cls].c_str(),func_list[cls].size());
-                    //s = strtok(NULL, "_");
-                    for (int fc = 0; fc < func_list[cls].size(); fc++) {//find the function
+                    if(!strcmp((char *)classnames[cls].c_str(), "AudioManager.java")) {//if it is Audio
+                        k = 1;
+                    }
+                    for(int fc = 0; fc < func_list[cls].size(); fc++) {//find the function
                         //LOGD("Compare Function: %d: %s and %s",func_list[cls].size(),func_list[cls][fc].c_str(), f[t]);
-                        if(!strcmp((char *) func_list[cls][fc].c_str(), f[t])) {
-                            //LOGD("Find Function: %s",func_list[cls][fc].c_str());//normally output
+                        if(f[t]==NULL){//record the addr only if it is the first run
+                            //LOGD("Found class %s",(char *)classnames[cls].c_str());
+                            length_of_camera_audio[k]++;
+                            int l = length_of_camera_audio[k];
+                            Art::OATParser::OatClass oatcls = oat_dex_storages[i]->GetOatClass(cls);
+                            Art::OATParser::OatMethod m = oatcls.GetOatMethod(fc);
+                            addr[current_length+t] = reinterpret_cast<size_t>(realloc(
+                                    reinterpret_cast<void *>(addr[current_length+t]),
+                                    l * sizeof(size_t)));
+                            *((size_t *) addr[current_length + t] + l - 1) = 0;
+                            //store the addr in a list
+                            if(m.GetOffset()!=0) {
+                                *((size_t *) addr[current_length + t] + l - 1) =
+                                        (size_t) start + m.GetOffset() +
+                                        oatParser.GetOatHeaderOffset();
+                                LOGD("Function: %s and offset %x, %p",
+                                     func_list[cls][fc].c_str(), m.GetOffset(),
+                                     *((size_t *) addr[current_length + t] + l - 1));
+                            }
+                        }
+                        else if(!strcmp((char *) func_list[cls][fc].c_str(), f[t])) {
+                            //LOGD("Find Function: %s",func_list[cls][fc].c_str()); //normally output
                             Art::OATParser::OatClass oatcls = oat_dex_storages[i]->GetOatClass(cls);
                             Art::OATParser::OatMethod m = oatcls.GetOatMethod(fc);
                             if(m.GetOffset()!=0) {
                                 addr[current_length+t] = (size_t)start + m.GetOffset() + oatParser.GetOatHeaderOffset();
-                                LOGD("OutputFunction: %s and offset %x",func_list[cls][fc].c_str(),m.GetOffset());
-                                found = 1;
+                                LOGD("OutputFunction: %s and offset %x, %p",func_list[cls][fc].c_str(),m.GetOffset(),addr[current_length+t]);
                                 break;
                             }
                         }
                     }//for function
-                }
-                if(found) break;
+                }//found class
             }//for class
         }//for target function list
     }//for dex
@@ -141,7 +149,7 @@ void ReadSo(JNIEnv* env, void* start, size_t* addr, char** funcs, \
     }
 }//1
 
-void ReadOffset(JNIEnv* env, std::string range, std::string offset, size_t* addr, char** funcs, \
+void ReadOffset(JNIEnv* env, std::string dex, size_t* addr, char** funcs, \
          size_t length, std::string filename) {
     static size_t current_length = 0;
     void *start = NULL;
@@ -163,32 +171,19 @@ void ReadOffset(JNIEnv* env, std::string range, std::string offset, size_t* addr
     }
     fd = open(filename.c_str(), O_RDONLY);
     fstat(fd, &sb);
-    LOGD("size: %d of filename %s",sb.st_size,filename.c_str());
     unsigned char* s = (unsigned char *)mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
     if(s == MAP_FAILED)
     {
         LOGD("Mapping Error, file is too big or app do not have the permisson!");
         exit(0);
     }
+    LOGD("size: %d of filename %s, loaded at %p",sb.st_size,filename.c_str(),s);
     //fclose(reinterpret_cast<FILE *>(fd));
     if (!strcmp(suffix.c_str(), "oat") || !strcmp(suffix.c_str(), "odex")) {
-        ReadOatOffset(env, s, range, addr, funcs, filename, length, current_length);
+        ReadOatOffset(env, s, dex, addr, funcs, filename, length, current_length);
     }
     // ==================Read so library==========================
     if (!strcmp(suffix.c_str(), "so")) {
-        /*
-        if (!sscanf(range.c_str(), "%p-%p", &start, &end)) {
-            LOGE("Could not parse range parameter(range): %s\n", range.c_str());
-            exit(0);
-        }
-        size_t ofs;
-        if (!sscanf(offset.c_str(), "%zu", &ofs)) {
-            LOGE("Could not parse range parameter(ofs): %s\n", offset.c_str());
-            exit(0);
-        }
-        ofs = ofs & ~(0x3F);//clean
-        start = (void *) ((size_t) start - ofs);
-         */
         ReadSo(env, s, addr, funcs, filename, length, current_length);
     }
 }

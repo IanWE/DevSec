@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <map>
 #include <memory>
@@ -43,11 +42,12 @@ class OATParser {
       bool ParseOatFile(const std::string read_file);
 
       bool TamperChecksum(const std::string tamper_file);
-
+/*
       size_t Size(){
     	  return End() - Begin();
       }
-
+*/
+      size_t Size();
       std::vector<const OatDexFile*> GetOatDexes(){
           return oat_dex_files_storage_;
       }
@@ -144,6 +144,7 @@ class OatDexFile {
       uint32_t GetOatClassOffset(uint16_t class_def_index) const {
           return oat_class_offsets_pointer_[class_def_index];
       }
+
       OATParser::OatClass GetOatClass(uint16_t class_def_index) const;
 
       std::string GetLocation() const{

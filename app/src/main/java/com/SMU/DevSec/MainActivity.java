@@ -85,10 +85,12 @@ public class MainActivity extends AppCompatActivity {
     private ItemsCheck itemsCheck;
     private PermissionRequire permissionRequire;
     private Button buttoninc,buttondec;
-    public static final int SIZE_LIMIT = 10;
+    public static final int SIZE_LIMIT = 20;
     public static final int TIME_INTERVAL = 10;
+    public static boolean isCollected = false;
     static String trial;
-    static long firstday = 0;
+    static long lastday = 0;
+    static long day = 1;
     ImageView imageView;
     Dialog imgdialog;
     ImageView image;
@@ -96,7 +98,12 @@ public class MainActivity extends AppCompatActivity {
     boolean filter_check = false;
     static int count_threshold = 1;
     static int preset_threshold = 0;
+    static CacheScan cs=null;
+    static int stage = 0;
 
+    static {
+        System.loadLibrary("native-lib"); //jni lib to use libflush
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,8 +123,6 @@ public class MainActivity extends AppCompatActivity {
             }
             boolean granted = mode == AppOpsManager.MODE_ALLOWED;
             if (!granted) {
-                //Toast.makeText(getBaseContext(), "Please grant the permisson.", Toast.LENGTH_SHORT)
-                //        .show();
                 permissionRequire.startDialog();
             }
         }
@@ -135,6 +140,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e("Pytorch", "Error reading assets", e);
         }
+
         //Switch
         mSwitch = (Switch) findViewById(R.id.btn_schedule_job);
         jobStatus = (EditText) findViewById(R.id.job_status);
@@ -193,16 +199,6 @@ public class MainActivity extends AppCompatActivity {
         status[4] = findViewById(R.id.notification);
         status[5] = findViewById(R.id.dayx);
 
-        /*
-        Button buttonr1 = (Button) findViewById(R.id.buttonr);
-        buttonr1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, Register.class);
-                startActivity(intent);
-            }
-        });
-         */
         createNotificationChannel(); //register channel
         //mannually adjust the threshold
         //buttoninc = (Button) findViewById(R.id.increase);
@@ -233,21 +229,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         //start
+
         if(trial.equals("1")) {
             TimerManager.getInstance(getBaseContext()).schedule_upload();
             TimerManager.getInstance(getBaseContext()).schedule();
-            if(!filter_check){
-                filter_check = true;
-                new Thread(new FilterRunnable(getBaseContext())).start();
-            }
             mSwitch.setChecked(true);
-        }
-
-        final boolean conducted = edit.getBoolean("Conducted",false);
-        if(!name.equals("None")&&!trial.equals("1")&&conducted) {//granted permission, registerd,
-            new Thread(new TrialModelCheck(getBaseContext())).start();//to get the code
-            intent = new Intent(MainActivity.this, RestartTest.class);
-            startActivity(intent);
         }
     }
 
@@ -268,21 +254,12 @@ public class MainActivity extends AppCompatActivity {
                 }
         }
         granted = mode == AppOpsManager.MODE_ALLOWED;
-        if(granted&&!name.equals("None")&&!trial.equals("1")&&conducted) {//granted permission, registerd,
-            new Thread(new TrialModelCheck(getBaseContext())).start();//to get the code
-            intent = new Intent(MainActivity.this, RestartTest.class);
-            startActivity(intent);
-        }
-        if(granted&&!name.equals("None")&&trial.equals("0")&&!conducted) {
+        if(granted&&!name.equals("None")&&trial.equals("0")) {
             intent = new Intent(MainActivity.this, TrialModel.class);
             startActivity(intent);
         }
-        if(granted&&!name.equals("None")&&trial.equals("1")&&conducted) {
+        if(granted&&!name.equals("None")&&trial.equals("1")) {
             TimerManager.getInstance(getBaseContext()).schedule_upload();
-            if(!filter_check){//get the filter
-                filter_check = true;
-                new Thread(new FilterRunnable(getBaseContext())).start();
-            }
             mSwitch.setChecked(true);
         }
     }
@@ -367,7 +344,6 @@ public class MainActivity extends AppCompatActivity {
                 intent, 0);
         final PackageManager pm = getPackageManager();
         List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
-
         //遍历
         for (ResolveInfo ri : ResolveInfos) {
             String path = null;
@@ -377,18 +353,6 @@ public class MainActivity extends AppCompatActivity {
             String appName = ri.loadLabel(packageManager).toString();
             pkg_name.put(packageName,appName);
             pkg_permission.put(appName,read_permissons(packageName));
-            //得到路径
-            //for (ApplicationInfo pk : packages) {
-            //    if (packageName.equals(pk.packageName)) {
-            //        path = pk.sourceDir;
-            //    }
-            //}
-            //添加到list
-            //int permisson_type = read_permissons(packageName);
-            //AppInfo appInfo = new AppInfo(appName, packageName, path, permisson_type);
-            //list.add(appInfo);
-            //name_permisson.put(packageName, permisson_type);//Appinfo is not needed for now
-            //name_permisson.remove("com.android.settings");
         }
     }
 
@@ -403,11 +367,11 @@ public class MainActivity extends AppCompatActivity {
             boolean flag = (PackageManager.PERMISSION_GRANTED ==
                     pm.checkPermission("android.permission.RECORD_AUDIO", packageName));
             if(flag)
-                type+=1;
+                type+=2;
             flag = (PackageManager.PERMISSION_GRANTED ==
                     pm.checkPermission("android.permission.CAMERA", packageName));
             if(flag)
-                type+=2;
+                type+=1;
             Log.d("xxxxxxxxxxx",packageName+" "+type);
             return type;
             } catch (Exception ex) {
@@ -455,7 +419,8 @@ public class MainActivity extends AppCompatActivity {
     public void scheduleJob(View v) {
         SideChannelJob.continueRun = true;
         SharedPreferences edit = getSharedPreferences("user",0);
-        firstday = edit.getLong("day",0);
+        lastday = edit.getLong("lastday",0);
+        day = edit.getLong("day",1);
         checkRunStatus(SideChannelJob.continueRun);
         // Building the job to be passed to the job scheduler
         Intent begin = new Intent(this, SideChannelJob.class);
@@ -528,7 +493,10 @@ public class MainActivity extends AppCompatActivity {
         db.execSQL(sSQL);
 
         sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.USER_FEEDBACK+ " (" +
-                SideChannelContract.Columns.SYSTEM_TIME + " INTEGER NOT NULL, " +
+                SideChannelContract.Columns.ARISINGTIME + " INTEGER NOT NULL, " +
+                SideChannelContract.Columns.EVENT + " INTEGER, "+
+                SideChannelContract.Columns.CURRENT_APP + " INTEGER, "+
+                SideChannelContract.Columns.ANSWERINGTIME + " INTEGER, "+
                 SideChannelContract.Columns.CHOICES + " INTEGER); ";
         db.execSQL(sSQL);
 
@@ -568,7 +536,6 @@ public class MainActivity extends AppCompatActivity {
             return file.getAbsolutePath();
         }
     }
-
 
 /*
     public void onClick(View v) {
