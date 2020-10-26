@@ -74,17 +74,19 @@ uint64_t calibrate(libflush_session_t* libflush_session)
   int temp1 = 0;
   int temp2 = 0;
   for(int i = 0; i < CALIBRATION_HISTOGRAM_SIZE; i++) {
-      if(temp1<=95000){
+      if(temp1<=90000){
 	    temp1 += hit_histogram[i];
       	hit_maximum_index = i;
       }
-      temp2 += miss_histogram[i];
-      if(temp2>100)
+      if(temp2<1000)
+        temp2 += miss_histogram[i];
 	    miss_maximum_index = i;
   }
   uint64_t cache = (hit_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
   uint64_t mem = (miss_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
   uint64_t threshold = mem - (mem - cache) / 2;
   LOGD("cache %d, mem %d, max cache %d, max mem %d",cache,mem,max_cache,max_mem);
+  if(hit_maximum_index>miss_maximum_index)
+      return 9999;
   return cache;
 }

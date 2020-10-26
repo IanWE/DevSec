@@ -47,13 +47,19 @@ Java_com_SMU_DevSec_CacheScan_GetPattern(JNIEnv *env, jobject thiz, jint c){
         int *t = (c==1?camera_pattern:audio_pattern);
         pthread_mutex_lock(&g_lock);
         memcpy(arr, t, sizeof(int) * length);
-        memset(camera_pattern,0,length_of_camera_audio[0]*sizeof(int));//clear the pattern
-        memset(audio_pattern,0,length_of_camera_audio[1]*sizeof(int));//clear the pattern
         pthread_mutex_unlock(&g_lock);
         env->ReleaseIntArrayElements(ja, arr, 0);
         return ja;
     }
     return NULL;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_SMU_DevSec_CacheScan_ClearPattern(JNIEnv *env, jobject thiz){
+    pthread_mutex_lock(&g_lock);
+    memset(camera_pattern,0,length_of_camera_audio[0]*sizeof(int));//clear the pattern
+    memset(audio_pattern,0,length_of_camera_audio[1]*sizeof(int));//clear the pattern
+    pthread_mutex_unlock(&g_lock);
 }
 
 extern "C" JNIEXPORT jintArray JNICALL

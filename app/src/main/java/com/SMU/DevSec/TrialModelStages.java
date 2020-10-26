@@ -49,7 +49,7 @@ public class TrialModelStages {
         if(c==0) {
             //stage1
             int[] pattern_filter = getFilter();
-            Log.d(TAG, "The Number of Available Addresses in Camera and Audio:" + Utils.sum(pattern_filter));
+            Log.d(TAG, "The Number of Filtered Addresses in Camera and Audio:" + Utils.sum(pattern_filter));
             Utils.saveArray(mContext, pattern_filter, "ptfilter");
             return 1;
         }

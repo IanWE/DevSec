@@ -378,7 +378,9 @@ public class CacheScan {
     }
 
     public static int[] getPattern(int c){
-        return GetPattern(c);
+        int []p =GetPattern(c);
+        ClearPattern();
+        return p;
     }
 
     public void Notify() { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
@@ -438,7 +440,7 @@ public class CacheScan {
                 String cur = target_functions.get(i);
                 if (flags[i] != 0){
                     if(i==1||i==2){
-                        int[] pattern = getPattern(i);
+                        int[] pattern = GetPattern(i);
                         if( (permission_type&i)!=i){//if app do not have camera permisson, skip
                             HandleCapture(i);
                             Log.d(TAG,"app do not have camera permisson, false positive");
@@ -446,7 +448,8 @@ public class CacheScan {
                         }
                         if(Utils.pattern_compare(ALpattern.get(i-1),pattern)<thresholdforpattern[i-1]){
                             HandleCapture(i);
-                            Log.d(TAG,"pattern did not match pattern-"+i);
+                            //ClearPattern();
+                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+Utils.sum(pattern)+" is less than "+thresholdforpattern[i-1]);
                             continue;
                         }
                     }
@@ -477,9 +480,10 @@ public class CacheScan {
                     }
                     HandleCapture(i);
                     updateUI(i);
+                    ClearPattern();
                     Log.d(TAG, app + ":" + target_functions.get(i));//&& flags[i]!=0
-                    if ((cur.equals(cameraapi) && handled[i] && time-lastactivetime>3000) ||
-                            (cur.equals(audioapi) && handled[i])){  //Generate only one notification at the same time
+                    if ((i==1 && handled[i] && time-lastactivetime>3000) ||
+                            (i==2 && handled[i])){  //Generate only one notification at the same time
                         notification++;
                         locker.lock();
                         handled[i] = false;
@@ -490,11 +494,11 @@ public class CacheScan {
                         PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, i + 5, intent, FLAG_UPDATE_CURRENT);
 
                         Intent intenty = new Intent(mContext, NotificationClickReceiver.class);
-                        intentBuild(intent, time, app, i, 1);
+                        intentBuild(intenty, time, app, i, 1);
                         PendingIntent pendingIntenty = PendingIntent.getBroadcast(mContext, i + 10, intenty, FLAG_UPDATE_CURRENT);
 
                         Intent intentn = new Intent(mContext, NotificationClickReceiver.class);
-                        intentBuild(intent, time, app, i, 2);
+                        intentBuild(intentn, time, app, i, 2);
                         PendingIntent pendingIntentn = PendingIntent.getBroadcast(mContext, i + 15, intentn, FLAG_UPDATE_CURRENT);
                         //send notification
                         String textContent = Utils.getDateToString("yyyy-MM-dd HH:mm:ss") + " " + app + " used " + behaviour_map.get(target_functions.get(i));
@@ -531,8 +535,8 @@ public class CacheScan {
         }
     }
 
-    private void intentBuild(Intent intent,Long time,String app,int flag,int ignored){
-        intent.putExtra("arisingtime",time);
+    private void intentBuild(Intent intent,long time,String app,int flag,int ignored){
+        intent.putExtra("arise",time);
         intent.putExtra("app",app);
         intent.putExtra("flag",flag);
         intent.putExtra("ignored",ignored);
@@ -577,4 +581,5 @@ public class CacheScan {
     public static native void filteraddr(int index);
     public static native void init(String[] dexlist,String[] filename,String[] func_list);
     public static native int[] GetPattern(int c);
+    public static native int[] ClearPattern();
 }

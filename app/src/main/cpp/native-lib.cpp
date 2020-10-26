@@ -37,6 +37,7 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
         jobject thiz,jintArray ptfilter) {
     int* arrp = env->GetIntArrayElements(ptfilter,0);
     int size = env->GetArrayLength(ptfilter);
+    continueRun = 1;
     for(int i=0;i<length_of_camera_audio[0];i++)//camera
     {
         if (arrp[i] == 1) {
@@ -46,9 +47,9 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
     }
     for(int i=length_of_camera_audio[0];i<length_of_camera_audio[0]+length_of_camera_audio[1];i++)//audio
     {
-        if(arrp[i+length_of_camera_audio[0]]==1)
-            LOGD("Filter audio address:%d-%p",i-length_of_camera_audio[0],*((size_t *) addr[camera_audio[1]] + i));
-            *((size_t *) addr[camera_audio[1]] + i) = 0;
+        if(arrp[i]==1)
+            LOGD("Filter audio address:%d-%p",i-length_of_camera_audio[0],*((size_t *) addr[camera_audio[1]] + i-length_of_camera_audio[0]));
+            *((size_t *) addr[camera_audio[1]] + i-length_of_camera_audio[0]) = 0;
     }
     hit(&g_lock, compiler_position, &continueRun,
         threshold, flags, times, thresholds, logs, log_length,sum_length,
@@ -62,7 +63,9 @@ Java_com_SMU_DevSec_TrialModelStages_trial1(
         JNIEnv *env, jobject thiz) {
     LOGD("Start trial 1.\n");
     int length_alive_function = length_of_camera_audio[0]+length_of_camera_audio[1];
+    LOGD("xxxxxxxxxsssxxxxx1.\n");
     memset(filter,0,length_alive_function*sizeof(int));
+    LOGD("xxxxxxxxxsssxxxxx2.\n");
     stage1(filter, threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1); //eliminate all poping functions.
     LOGD("Finish TrialMode 1");
     return;

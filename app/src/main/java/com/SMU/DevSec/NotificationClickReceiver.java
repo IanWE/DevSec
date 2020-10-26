@@ -22,7 +22,7 @@ public class NotificationClickReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         //
         Bundle data = intent.getExtras();
-        long arisingtime = data.getLong("arisingtime");
+        long arise = (long) data.get("arise");
         int event = data.getInt("flag");
         String app = data.getString("app");
         int ignored = data.getInt("ignored");
@@ -37,7 +37,7 @@ public class NotificationClickReceiver extends BroadcastReceiver {
             lastactivetime = Utils.getCurTimeLong();
         }
         UserFeedback userFeedback = new UserFeedback();//create a feedback
-        userFeedback.setArisingtime(arisingtime);
+        userFeedback.setArisingtime(arise);
         userFeedback.setEvent(event);
         userFeedback.setApp(app);
         userFeedback.setAnsweringtime(Utils.getCurTimeLong());
