@@ -79,8 +79,9 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
                 continue;
             int k = 0;
             for(int cls=0;cls<func_list.size();cls++) {//find the class
-                if (!strcmp((char *)classnames[cls].c_str(), c[t])){
-                    if(!strcmp((char *)classnames[cls].c_str(), "AudioManager.java")) {//if it is Audio
+                //if (!strcmp((char *)classnames[cls].c_str(), c[t])){
+                if (strstr((char *)classnames[cls].c_str(), c[t])){
+                    if(strstr((char *)classnames[cls].c_str(), "Audio")) {//if it is Audio
                         k = 1;
                     }
                     for(int fc = 0; fc < func_list[cls].size(); fc++) {//find the function
@@ -100,8 +101,8 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
                                 *((size_t *) addr[current_length + t] + l - 1) =
                                         (size_t) start + m.GetOffset() +
                                         oatParser.GetOatHeaderOffset();
-                                LOGD("Function: %s and offset %x, %p",
-                                     func_list[cls][fc].c_str(), m.GetOffset(),
+                                LOGD("Function:%s %s and offset %x, %p",
+                                     classnames[cls].c_str(),func_list[cls][fc].c_str(), m.GetOffset(),
                                      *((size_t *) addr[current_length + t] + l - 1));
                             }
                         }

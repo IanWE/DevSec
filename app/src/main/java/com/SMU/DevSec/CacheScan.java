@@ -80,29 +80,25 @@ public class CacheScan {
     boolean filtered = false;
     static ArrayList<String> target_functions = new ArrayList<String>();
     final HashMap<String, String> behaviour_map = new HashMap<String, String>();
-    String audioapi = "AudioManager";
-    String cameraapi = "CameraManager";
+    String audioapi = "Audio";
+    String cameraapi = "Camera";
     ArrayList<int[]> ALpattern = new ArrayList<int[]>();
     int[] thresholdforpattern = {99999,99999};
+    String BehaviorList[] = {"Information","Camera","AudioRecorder","Location"};
 
     CacheScan(Context context) throws IOException {
         mContext = context;
         init();
     }
-
-
     //6 function
     private void init() throws IOException {
         //exec("cat /proc/`pgrep DevSec`/maps");
         int pid = android.os.Process.myPid();
-        /*
-        behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
-        behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
+        //behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
+        //behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
         behaviour_map.put(audioapi, "AudioRecorder");
-        behaviour_map.put("_ZN7android5media12IAudioRecord11asInterfaceERKNS_2spINS_7IBinderEEE", "AudioRecorder");
+        //behaviour_map.put("_ZN7android5media12IAudioRecord11asInterfaceERKNS_2spINS_7IBinderEEE", "AudioRecorder");
         behaviour_map.put(cameraapi, "Camera");
-        */
-        String BehaviorList[] = {"Information","Camera","AudioRecorder","Location"};
         AssetManager am = mContext.getAssets();
         ArrayList<String> dex = new ArrayList<String>();
         ArrayList<String> filename = new ArrayList<String>();
@@ -379,13 +375,14 @@ public class CacheScan {
 
     public static int[] getPattern(int c){
         int []p =GetPattern(c);
-        ClearPattern();
+        ClearPattern(3);
         return p;
     }
 
     public void Notify() { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
         int[] flags = CacheCheck();
         app = getTopApp(); // get package name
+        String AppStringforcheck = app;
         int permission_type = 0;
         if(pkg_permission.containsKey(app)){
             permission_type = pkg_permission.get(app);
@@ -441,17 +438,28 @@ public class CacheScan {
                 if (flags[i] != 0){
                     if(i==1||i==2){
                         int[] pattern = GetPattern(i);
-                        if( (permission_type&i)!=i){//if app do not have camera permisson, skip
+                        //ClearPattern();
+                        //if(!AppStringforcheck.equals("None")&&
+                        if((permission_type&i)!=i&&!AppStringforcheck.equals("None")){//if app do not have camera permisson, skip
                             HandleCapture(i);
-                            Log.d(TAG,"app do not have camera permisson, false positive");
+                            Log.d(TAG,(permission_type&i)+" app do not have "+i+" permisson, false positive");
+                            /*
+                            if(permission_type==2&&i==1) {//if it is only a audio app
+                                ClearPattern(1);
+                                continue;
+                            }
+                             */
+                            ClearPattern(3);
                             continue;
                         }
-                        if(Utils.pattern_compare(ALpattern.get(i-1),pattern)<thresholdforpattern[i-1]){
+                        //int cmp = Utils.pattern_compare(ALpattern.get(i-1),pattern);
+                        int cmp = Utils.sum(pattern);
+                        if(cmp<thresholdforpattern[i-1]){
                             HandleCapture(i);
-                            //ClearPattern();
-                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+Utils.sum(pattern)+" is less than "+thresholdforpattern[i-1]);
+                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]);
                             continue;
                         }
+                        ClearPattern(3);
                     }
                     //record the groundtruth
                     GroundTruthValue groundTruthValue = new GroundTruthValue();
@@ -461,26 +469,27 @@ public class CacheScan {
                     groundTruthValues.add(groundTruthValue);
                     insert_locker.unlock();
 
-                    if (cur.equals(audioapi)) {
+                    if (i==2) {
                         lastaudio = time;
                         if (lastaudio - lastcamera < 2500) {//if the camera follow audio tightly
                             Log.d(TAG, "Skip a audio event" + (lastaudio - lastcamera));
+                            ClearPattern(3);
                             HandleCapture(i);
                             continue;
                         }
                     }
-                    if (cur.equals(cameraapi))//if camera is active, we should handle audio api, since it will come with camera api
+                    if (i==1)//if camera is active, we should handle audio api, since it will come with camera api
                     {
                         lastcamera = time;
                         if (lastcamera - lastaudio < 2500) {
                             Log.d(TAG, "Skip a camera event" + (lastcamera - lastaudio));
+                            ClearPattern(3);
                             HandleCapture(i);
                             continue;
                         }
                     }
                     HandleCapture(i);
                     updateUI(i);
-                    ClearPattern();
                     Log.d(TAG, app + ":" + target_functions.get(i));//&& flags[i]!=0
                     if ((i==1 && handled[i] && time-lastactivetime>3000) ||
                             (i==2 && handled[i])){  //Generate only one notification at the same time
@@ -501,14 +510,14 @@ public class CacheScan {
                         intentBuild(intentn, time, app, i, 2);
                         PendingIntent pendingIntentn = PendingIntent.getBroadcast(mContext, i + 15, intentn, FLAG_UPDATE_CURRENT);
                         //send notification
-                        String textContent = Utils.getDateToString("yyyy-MM-dd HH:mm:ss") + " " + app + " used " + behaviour_map.get(target_functions.get(i));
+                        String textContent = Utils.getDateToString("yyyy-MM-dd HH:mm:ss") + " " + app + " used " + BehaviorList[i];
                         //创建大文本样式
                         NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
                         bigTextStyle.setBigContentTitle("DevSec")
                                 .setSummaryText(behaviour_map.get(target_functions.get(i)))
                                 .bigText(Utils.getDateToString("yyyy-MM-dd HH:mm:ss") + " we found " +
                                         app + " was using " +
-                                        behaviour_map.get(target_functions.get(i)) + ". Can you confirm the behaviour?");
+                                         BehaviorList[i]+ ". Can you confirm the behaviour?");
                         NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext, "behaviour capture")
                                 .setSmallIcon(R.mipmap.ic_launcher_foreground)
                                 .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -581,5 +590,5 @@ public class CacheScan {
     public static native void filteraddr(int index);
     public static native void init(String[] dexlist,String[] filename,String[] func_list);
     public static native int[] GetPattern(int c);
-    public static native int[] ClearPattern();
+    public static native int[] ClearPattern(int c);
 }

@@ -206,7 +206,7 @@ static bool ReadIndexBssMapping(OATParser* oat_file,
     const uint8_t* methods_pointer = nullptr;
     if (type != kOatClassNoneCompiled){
         if (type == kOatClassSomeCompiled) {
-            LOGD("It's Somecompiled. \n");
+            //LOGD("It's Somecompiled. \n");
             bitmap_size = static_cast<uint32_t>(*reinterpret_cast<const uint32_t*>(after_type_pointer));
             bitmap_pointer = after_type_pointer + sizeof(bitmap_size);
 	        methods_pointer = bitmap_pointer + bitmap_size;
@@ -230,7 +230,7 @@ static bool ReadIndexBssMapping(OATParser* oat_file,
 const OatMethodOffsets* OATParser::OatClass::GetOatMethodOffsets(uint32_t method_index) const {
   // NOTE: We don't keep the number of methods and cannot do a bounds check for method_index.
   if (methods_pointer_ == nullptr) {
-    LOGE("(No this function)Null pointer.\n");
+    //LOGE("(No this function)Null pointer.\n");
     return nullptr;
   }
   size_t methods_pointer_index;

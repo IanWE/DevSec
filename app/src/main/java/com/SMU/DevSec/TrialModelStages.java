@@ -27,6 +27,7 @@ public class TrialModelStages {
     volatile String[] apps = new String[5];
     boolean stop = false;
     int s = 0;
+    int seconds = 30;
 
     public TrialModelStages(Context context) {
         mContext = context;
@@ -109,7 +110,8 @@ public class TrialModelStages {
             //Log.d(TAG,str);
             SpannableStringBuilder ssb = new SpannableStringBuilder();
             if(s==0){
-                ssb.append("You are at stage 1. Please click the \"Next\" button in 10 seconds later.");
+                ssb.append("You are at stage 1; we will need "+seconds+" seconds to check the functions. Please do not use Camera or AudioRecord function during this period. " +
+                        "You can switch out to the home page and switch back to click the \"Next\" button in "+seconds+" seconds later.");
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -131,8 +133,8 @@ public class TrialModelStages {
                 public void onClick(View v) {
                     if(s==0){//check the result after 10 seconds
                         long lefttime = System.currentTimeMillis()- finalTime;
-                        if(lefttime<10*1000){
-                            showToast("Please try again in "+(10-lefttime/1000)+" seconds.");
+                        if(lefttime<seconds*1000){
+                            showToast("Please try again in "+(seconds-lefttime/1000)+" seconds.");
                             return;
                         }
                     }
@@ -144,7 +146,7 @@ public class TrialModelStages {
                     }
                     if(r==2){
                         editor.putString("trialmodel","2");
-                        editor.apply();
+                        editor.commit();
                         showToast("Sorry, your phone is not compatible with our experiment.");
                         // stop service
                         Intent intent = new Intent(mContext, AfterTrialModel.class);
@@ -160,6 +162,7 @@ public class TrialModelStages {
                         }
                         if (s == 1) {
                             s = 2;
+                            flush(s);
                             alertDialog.cancel();
                             getInstance(mContext).startDialog();
                             return;
@@ -199,4 +202,5 @@ public class TrialModelStages {
 
     public static native void trial1();
     public static native int[] getFilter();
+    public static native void flush(int c);
 }

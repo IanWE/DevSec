@@ -4,6 +4,7 @@
 #include <jni.h>
 #include <ostream>
 #include <pthread.h>
+#include <libflush/hit.h>
 //#include "native-lib.cpp"
 extern int finishtrial1;
 extern jint* filter;
@@ -55,10 +56,16 @@ Java_com_SMU_DevSec_CacheScan_GetPattern(JNIEnv *env, jobject thiz, jint c){
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_SMU_DevSec_CacheScan_ClearPattern(JNIEnv *env, jobject thiz){
+Java_com_SMU_DevSec_CacheScan_ClearPattern(JNIEnv *env, jobject thiz,jint c){
     pthread_mutex_lock(&g_lock);
-    memset(camera_pattern,0,length_of_camera_audio[0]*sizeof(int));//clear the pattern
-    memset(audio_pattern,0,length_of_camera_audio[1]*sizeof(int));//clear the pattern
+    if(c==1)
+        memset(camera_pattern,0,length_of_camera_audio[0]*sizeof(int));//clear the pattern
+    if(c==2)
+        memset(audio_pattern,0,length_of_camera_audio[1]*sizeof(int));//clear the pattern
+    if(c==3) {
+        memset(camera_pattern, 0, length_of_camera_audio[0] * sizeof(int));//clear the pattern
+        memset(audio_pattern, 0, length_of_camera_audio[1] * sizeof(int));//clear the pattern
+    }
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -171,8 +178,12 @@ Java_com_SMU_DevSec_TrialModelStages_getFilter(JNIEnv *env, jclass clazz) {
     jintArray ja = env->NewIntArray(length_alive_function);
     jint* arr = env->GetIntArrayElements(ja, NULL);
     memcpy(arr,filter,sizeof(int)*length_alive_function);
-    //for(int i=0;i<length_alive_function;i++)
-    //    LOGD("xxxxxxxxxxxxxxxxxxxxxxaa %d",arr[i]);
     env->ReleaseIntArrayElements(ja, arr, 0);
     return ja;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_SMU_DevSec_TrialModelStages_flush(JNIEnv *env, jclass clazz,jint c) {
+    flush_address((size_t*)addr[c],length_of_camera_audio[c-1]);
 }

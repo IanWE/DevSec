@@ -74,7 +74,7 @@ uint64_t calibrate(libflush_session_t* libflush_session)
   int temp1 = 0;
   int temp2 = 0;
   for(int i = 0; i < CALIBRATION_HISTOGRAM_SIZE; i++) {
-      if(temp1<=90000){
+      if(temp1<=95000){
 	    temp1 += hit_histogram[i];
       	hit_maximum_index = i;
       }

@@ -148,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences edit = getSharedPreferences("user", 0);
         final String name = edit.getString("RSA", "None");
         trial = edit.getString("trialmodel", "0");
+        //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxx"+trial);
         if(check){
             if(!SideChannelJob.continueRun) {
                 mSwitch.setChecked(false);
@@ -254,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         }
         granted = mode == AppOpsManager.MODE_ALLOWED;
-        if(granted&&!name.equals("None")&&trial.equals("0")) {
+        if(granted&&!name.equals("None")&&!trial.equals("1")) {
             intent = new Intent(MainActivity.this, TrialModel.class);
             startActivity(intent);
         }
