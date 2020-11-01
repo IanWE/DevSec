@@ -23,11 +23,12 @@ import static com.SMU.DevSec.Utils.readSaveFile;
 public class TrialModelStages {
     Context mContext;
     private static TrialModelStages INSTANCE = null;
-    final String TAG = "ItemsCheck";
+    final String TAG = "CacheScan_ItemsCheck";
     volatile String[] apps = new String[5];
     boolean stop = false;
     int s = 0;
-    int seconds = 30;
+    int s_1 = 0;
+    int seconds = 10;
 
     public TrialModelStages(Context context) {
         mContext = context;
@@ -49,6 +50,8 @@ public class TrialModelStages {
     public int checkconducted(int c) {
         if(c==0) {
             //stage1
+            //if(s_1==0)
+            //    return 1;
             int[] pattern_filter = getFilter();
             Log.d(TAG, "The Number of Filtered Addresses in Camera and Audio:" + Utils.sum(pattern_filter));
             Utils.saveArray(mContext, pattern_filter, "ptfilter");
@@ -64,10 +67,8 @@ public class TrialModelStages {
                     permission_type = pkg_permission.get(apps[i]);
                 Log.d(TAG,"Application:"+apps[i]+", Permisson:"+permission_type);
                 if ((permission_type & c) == c) {//check the permisson 1 camera 2 audio
-                    Log.d(TAG,"Get Pattern");
                     int[] pattern = CacheScan.getPattern(c);
                     //sum the pattern
-                    Log.d(TAG,"Count Pattern");
                     int sum = Utils.sum(pattern);
                     Log.d(TAG,"Activated Function:"+sum);
                     if (sum == 0)//if no activations
@@ -110,20 +111,27 @@ public class TrialModelStages {
             //Log.d(TAG,str);
             SpannableStringBuilder ssb = new SpannableStringBuilder();
             if(s==0){
-                ssb.append("You are at stage 1; we will need "+seconds+" seconds to check the functions. Please do not use Camera or AudioRecord function during this period. " +
-                        "You can switch out to the home page and switch back to click the \"Next\" button in "+seconds+" seconds later.");
+                //if(s_1!=0) {
+                    //ssb.append("You are at stage 1. We will need " + seconds + " seconds to check the functions. Please switch to the home page and wait for "+seconds+" seconds; then switch back.");
+                ssb.append("You are at stage 1. We will need " + seconds + " seconds to check the functions. Please do not use camera or audiorecording function during this period.");
                 new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        trial1();//
-                    }
-                }).start();
-                time = System.currentTimeMillis();
+                        @Override
+                        public void run() {
+                            trial1();//
+                        }
+                    }).start();
+                    time = System.currentTimeMillis();
+                //} else{
+                //    ssb.append("    You are at stage 1-2. Please try to launch 3 apps you use everyday (such as Instagram, Telegram and WhatsApp, etc.)," +
+                //            " and keep them for few seconds. This can help eliminate some false notifications.\n" +
+                //            "    It should be noted that do not use the camera and recording functions of these apps during the stage 1-2. " +
+                //            "\n    After that, please switch back and click the \"Next\" button");
+                //}
             }
             if (s == 1)
-                ssb.append("You are at stage 2. Please switch out and turn on the Camera for few seconds, then switch back.");
+                ssb.append("(Important!) You are at stage 2. Please turn on the Camera for 3 seconds and close it; then switch back and click the \"Next\" button");
             else if(s==2)
-                ssb.append("You are at stage 3. Please turn on the AudioRecorder and use the in-app recording function for few seconds, and then switch back.");
+                ssb.append("(Important!) You are at stage 3. Please turn on the Whatsapp(or Telegram/Wechat) and use the in-app recording function for 3 seconds and close it; then switch back and click the \"Next\" button");
             tvContent.setMovementMethod(ScrollingMovementMethod.getInstance());
             tvContent.setText(ssb);
             Button next = window.findViewById(R.id.next_stage);
@@ -154,6 +162,12 @@ public class TrialModelStages {
                     }
                     if(r==1) {
                         if (s == 0) {
+                            //if(s_1==0){
+                            //    s_1 = 1;
+                            //    alertDialog.cancel();
+                            //    getInstance(mContext).startDialog();
+                            //    return;
+                            //}
                             s = 1;
                             stage = 2;//flag to start scan
                             alertDialog.cancel();

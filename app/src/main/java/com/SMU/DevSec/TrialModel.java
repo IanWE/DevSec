@@ -46,6 +46,18 @@ public class TrialModel extends AppCompatActivity {
                 TrialModelStages.getInstance(TrialModel.this).startDialog();
             }
         });
+
+        Button close_button = findViewById(R.id.close);
+        close_button.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                Intent stop=new Intent (getBaseContext(),SideChannelJob.class);
+                stopService(stop);
+                finishAffinity();
+                System.exit(0);
+            }
+        });
+
         stage = 1;//start the service
         Intent begin = new Intent(this, SideChannelJob.class);
         if (!continueRun) {
@@ -74,7 +86,8 @@ public class TrialModel extends AppCompatActivity {
     }
 
     public void onDestroy() {
-        finishAffinity();
+        //finishAffinity();
+        //if(TrialModelStages.getInstance(TrialModel.this) != null) {   mDialog.dismiss();  }
         super.onDestroy();
     }
 }

@@ -33,7 +33,6 @@ public class AfterTrialModel extends AppCompatActivity {
         //stop service
         Intent stop=new Intent (getBaseContext(),SideChannelJob.class);
         stopService(stop);
-        SideChannelJob.continueRun = false;
 
         TextView tv = findViewById(R.id.aftermsg);
         SharedPreferences preferences = getBaseContext().getSharedPreferences("user", Context.MODE_PRIVATE);

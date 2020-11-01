@@ -1,0 +1,37 @@
+2020-11-01 18:30:39.995 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioHandle.javaequals ***
+2020-11-01 18:30:39.995 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javabroadcastDeviceListChange_sync ***
+2020-11-01 18:30:39.995 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javacalcListDeltas ***
+2020-11-01 18:30:39.995 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javaupdateAudioPortCache ***
+2020-11-01 18:30:39.995 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javaupdatePortConfig ***
+2020-11-01 18:30:39.995 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioRecord.java<init> ***
+-----------------------------------------------------
+2020-11-01 18:30:20.952 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javacompare ***
+2020-11-01 18:30:20.952 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javagetCameraIdList ***
+2020-11-01 18:30:20.952 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraMetadataNative.javanativeReadValues ***
+2020-11-01 18:30:20.952 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraMetadataNative.javanativeWriteToParcel ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraMetadataNative.javaregisterAllMarshalers ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern ICameraService.javagetCameraCharacteristics ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern ICameraService.javaisHiddenPhysicalCamera ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern ICameraServiceProxy.java<init> ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javaconnectCameraServiceLocked ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javaonTorchStatusChangedLocked ***
+2020-11-01 18:30:20.953 6435-6435/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javaonTorchStatusChanged ***
+========================================================
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioHandle.javaequals ***
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javabroadcastDeviceListChange_sync ***
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javacalcListDeltas ***
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javaupdateAudioPortCache ***
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioManager.javaupdatePortConfig ***
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioPortEventHandler.javahandleMessage ***
+2020-11-01 18:33:38.128 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Audio Pattern AudioRecord.java<init> ***
+----------------------------------------------------------
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javagetCameraIdList ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraMetadataNative.javanativeReadValues ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraMetadataNative.javanativeWriteToParcel ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraMetadataNative.javaregisterAllMarshalers ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern ICameraService.javaisHiddenPhysicalCamera ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern ICameraServiceProxy.java<init> ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javaconnectCameraServiceLocked ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javaonTorchStatusChangedLocked ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javagetCameraIdList ***
+2020-11-01 18:33:21.307 32002-32002/com.SMU.DevSec D/CacheScan_DexInfo: *** Camera Pattern CameraManager.javaonTorchStatusChanged ***

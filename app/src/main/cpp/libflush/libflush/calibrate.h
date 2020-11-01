@@ -10,6 +10,6 @@
 #define CALIBRATION_HISTOGRAM_SCALE 5
 #define CALIBRATION_HISTOGRAM_THRESHOLD 100
 
-uint64_t calibrate(libflush_session_t* libflush_session);
+int calibrate(libflush_session_t* libflush_session);
 
 #endif  /*CALIBRATE_H*/

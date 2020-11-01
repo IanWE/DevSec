@@ -12,7 +12,7 @@
 
 #define TAG_NAME "ARMAGEDDON"
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)
-uint64_t calibrate(libflush_session_t* libflush_session)
+int calibrate(libflush_session_t* libflush_session)
 {
   char buffer[4096] = {0};
   void* address = &buffer[1024];
@@ -74,7 +74,7 @@ uint64_t calibrate(libflush_session_t* libflush_session)
   int temp1 = 0;
   int temp2 = 0;
   for(int i = 0; i < CALIBRATION_HISTOGRAM_SIZE; i++) {
-      if(temp1<=95000){
+      if(temp1<=90000){
 	    temp1 += hit_histogram[i];
       	hit_maximum_index = i;
       }
@@ -82,9 +82,9 @@ uint64_t calibrate(libflush_session_t* libflush_session)
         temp2 += miss_histogram[i];
 	    miss_maximum_index = i;
   }
-  uint64_t cache = (hit_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
-  uint64_t mem = (miss_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
-  uint64_t threshold = mem - (mem - cache) / 2;
+  int cache = (hit_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
+  int mem = (miss_maximum_index+1) * CALIBRATION_HISTOGRAM_SCALE;
+  int threshold = mem - (mem - cache) / 2;
   LOGD("cache %d, mem %d, max cache %d, max mem %d",cache,mem,max_cache,max_mem);
   if(hit_maximum_index>miss_maximum_index)
       return 9999;

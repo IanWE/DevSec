@@ -41,6 +41,7 @@ import static com.SMU.DevSec.MainActivity.infering;
 import static com.SMU.DevSec.MainActivity.lastday;
 import static com.SMU.DevSec.MainActivity.day;
 import static com.SMU.DevSec.MainActivity.stage;
+import static com.SMU.DevSec.MainActivity.trial;
 
 public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
@@ -71,8 +72,12 @@ public class SideChannelJob extends Service {
         int importance = NotificationManager.IMPORTANCE_LOW;
         //构建通知渠道
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, channelName, importance);
+        Intent intent;
         channel.setDescription(description);
-        Intent intent = new Intent(this, MainActivity.class);
+        if(trial!=null&&trial.equals("1"))
+            intent = new Intent(this, MainActivity.class);
+        else
+            intent = new Intent(this, TrialModel.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
         //在创建的通知渠道上发送通知
@@ -82,7 +87,8 @@ public class SideChannelJob extends Service {
                 .setContentText("Scanning")//设置通知内容
                 .setOngoing(true)//设置处于运行状态
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true); //用户触摸时，自动关闭
+                .setDeleteIntent(pendingIntent);
+                //.setAutoCancel(true); //用户触摸时，自动关闭
         //向系统注册通知渠道，注册后不能改变重要性以及其他通知行为
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);
@@ -272,8 +278,8 @@ public class SideChannelJob extends Service {
                     //Start Scaning
                     //scan( CacheScan.dexlist, CacheScan.filenames, CacheScan.func_lists);
                     int[] pattern_filter = Utils.getArray(mContext, "ptfilter");
-                    for(int i=0;i<pattern_filter.length;i++)
-                        Log.d(TAG,"ptfilter:"+pattern_filter[i]);
+                    //for(int i=0;i<pattern_filter.length;i++)
+                    //    Log.d(TAG,"ptfilter:"+pattern_filter[i]);
                     scan(pattern_filter, pattern_filter.length);
                 }
             }).start();
@@ -306,7 +312,7 @@ public class SideChannelJob extends Service {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    //Start Scaning
+                    //wait until stage becomes 2
                     while(stage!=2){
                         try {
                             Thread.sleep(500);

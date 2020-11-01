@@ -31,6 +31,19 @@
         android:textAllCaps="false"
         android:textColor="#ff0"
         android:textSize="18sp" />
+    <Button
+        android:id="@+id/close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="90dp"
+        android:layout_marginTop="30dp"
+        android:layout_marginRight="90dp"
+        android:background="@drawable/button_shape"
+        android:layout_below="@+id/start"
+        android:text="Close"
+        android:textAllCaps="false"
+        android:textColor="#ddd"
+        android:textSize="18sp" />
     <!--
     <TextView
         android:layout_width="wrap_content"

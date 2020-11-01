@@ -104,7 +104,7 @@ class JobInsertRunnable implements Runnable {
             }
         }
         // Ground Truth insertion
-        if(groundTruthValues.size()!=0) {
+        if(groundTruthValues!=null&&groundTruthValues.size()!=0) {
             values = new ContentValues();
             for (GroundTruthValue groundTruthValue : groundTruthValues) {
                 values.put(SideChannelContract.Columns.SYSTEM_TIME,
@@ -114,7 +114,7 @@ class JobInsertRunnable implements Runnable {
                 db.insert(SideChannelContract.GROUND_TRUTH, null, values);
             }
         }
-        if(userFeedbacks.size()!=0) {
+        if(userFeedbacks!=null&&userFeedbacks.size()!=0) {
             values = new ContentValues();
             for (UserFeedback userFeedback : userFeedbacks) {
                 values.put(SideChannelContract.Columns.ARISINGTIME,
@@ -130,7 +130,7 @@ class JobInsertRunnable implements Runnable {
                 db.insert(SideChannelContract.USER_FEEDBACK, null, values);
             }
         }
-        if(compilerValues.size()!=0) {
+        if(compilerValues!=null&&compilerValues.size()!=0) {
             values = new ContentValues();
             for (CompilerValue compilerValue: compilerValues) {
                 values.put(SideChannelContract.Columns.SYSTEM_TIME,
@@ -144,7 +144,7 @@ class JobInsertRunnable implements Runnable {
                 db.insert(SideChannelContract.SIDE_COMPILER, null, values);
             }
         }
-        if(frontAppValues.size()!=0) {
+        if(frontAppValues!=null&&frontAppValues.size()!=0) {
             values = new ContentValues();
             for (FrontAppValue frontAppValue: frontAppValues) {
                 values.put(SideChannelContract.Columns.SYSTEM_TIME,

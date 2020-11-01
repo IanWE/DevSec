@@ -85,6 +85,9 @@ public class CacheScan {
     ArrayList<int[]> ALpattern = new ArrayList<int[]>();
     int[] thresholdforpattern = {99999,99999};
     String BehaviorList[] = {"Information","Camera","AudioRecorder","Location"};
+    double audio_threshold_level = 0.6;
+    double camera_threshold_level = 0.5;
+    int[] cleanpattern = {0,0};
 
     CacheScan(Context context) throws IOException {
         mContext = context;
@@ -96,7 +99,7 @@ public class CacheScan {
         int pid = android.os.Process.myPid();
         //behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
         //behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
-        behaviour_map.put(audioapi, "AudioRecorder");
+        behaviour_map.put(audioapi, "AudioRecord");
         //behaviour_map.put("_ZN7android5media12IAudioRecord11asInterfaceERKNS_2spINS_7IBinderEEE", "AudioRecorder");
         behaviour_map.put(cameraapi, "Camera");
         AssetManager am = mContext.getAssets();
@@ -152,7 +155,6 @@ public class CacheScan {
         SharedPreferences edit = mContext.getSharedPreferences("user",0);
         notification = edit.getLong("Notification",0);
         answered = edit.getLong("Answered",0);
-
         lastday = edit.getLong("lastday", 0);
         day = edit.getLong("day", 0);
 
@@ -161,6 +163,12 @@ public class CacheScan {
         for(int i=0;i<ALpattern.size();i++)
             thresholdforpattern[i] = Utils.sum(ALpattern.get(i));
         init(dexlist,filenames,func_lists);//initiate the JNI function
+        ResetThreshold();
+        //if(thresholdforpattern[0]<10)
+        //    camera_threshold_level = 0.8;
+        //if(thresholdforpattern[1]<10)
+        //    audio_threshold_level = 0.8;
+        Log.d(TAG,"Threshold Level is at "+camera_threshold_level+"-"+audio_threshold_level);//only output
     }
 
     private String[] exec(int pid, String target) {
@@ -387,6 +395,11 @@ public class CacheScan {
         if(pkg_permission.containsKey(app)){
             permission_type = pkg_permission.get(app);
         }
+        if (app.equals("None")||app.toUpperCase().contains("LAUNCHER")) {
+            app = preapp;
+        }
+        preapp = app;
+
         long time = System.currentTimeMillis();
         FrontAppValue fa = new FrontAppValue();
         fa.setSystemTime(time);
@@ -407,11 +420,12 @@ public class CacheScan {
                 ischeckedaddr = true;
                 showToast("Job scheduled successfully");
             }
-
-            if (app.equals("None")||app.toUpperCase().contains("LAUNCHER")) {
-                app = preapp;
-            }
+            /*
             preapp = app;
+            if(pkg_permission.containsKey(app)){
+                permission_type = pkg_permission.get(app);
+            }
+             */
             updateUI(4);
             //insert the logs into dataset
             long[] times = GetTimes();
@@ -443,23 +457,57 @@ public class CacheScan {
                         if((permission_type&i)!=i&&!AppStringforcheck.equals("None")){//if app do not have camera permisson, skip
                             HandleCapture(i);
                             Log.d(TAG,(permission_type&i)+" app do not have "+i+" permisson, false positive");
-                            /*
-                            if(permission_type==2&&i==1) {//if it is only a audio app
-                                ClearPattern(1);
-                                continue;
-                            }
-                             */
                             ClearPattern(3);
                             continue;
                         }
-                        //int cmp = Utils.pattern_compare(ALpattern.get(i-1),pattern);
-                        int cmp = Utils.sum(pattern);
-                        if(cmp<thresholdforpattern[i-1]){
+                        int cmp;
+                        double thforcamera = camera_threshold_level;
+                        double thforaudio = audio_threshold_level;
+                        cmp = Utils.pattern_compare(ALpattern.get(i - 1), pattern);
+                        //cmp = Utils.sum(pattern);
+                        if(app.equals("Instagram")) {
+                            thforcamera = 1;
+                            thforaudio = 1;
+                        }
+                        //cmp = Utils.sum(pattern);
+                        if((app.equals("None")||i==1)&&cmp<=(int)(thresholdforpattern[i-1]*thforcamera)){
+                            cleanpattern[i-1]++;
                             HandleCapture(i);
-                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]);
+                            if(cleanpattern[i-1]>5){
+                                cleanpattern[i-1] = 0;
+                                ClearPattern(i);
+                                Log.d(TAG,"pattern-"+i+" clear : "+cmp);
+                            }
+                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforcamera);
                             continue;
                         }
+                        else if((app.equals("None")||i==2)&&cmp<=(int)(thresholdforpattern[i-1]*thforaudio)){//when audio activated, camera should less than 50% activation,ortherwise pop a camera event
+                            cleanpattern[i-1]++;
+                            HandleCapture(i);
+                            if(cleanpattern[i-1]>5){
+                                cleanpattern[i-1] = 0;
+                                ClearPattern(i);
+                                Log.d(TAG,"pattern-"+i+" clear : "+cmp);
+                            }
+                            HandleCapture(i);
+                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforaudio);
+                            continue;
+                        }
+                        else if(i==2) {
+                            int[] patternX = GetPattern(1);
+                            int sumcpattern = Utils.pattern_compare(ALpattern.get(0), patternX);
+                            if (sumcpattern >= (int)(thresholdforpattern[0] * (thforcamera-0.1))) {
+                                HandleCapture(i);
+                                ClearPattern(2);
+                                Log.d(TAG, "Camera pattern is " + sumcpattern + ". Skip audio event.");
+                                i = 1;
+                                //continue;
+                            }
+                        }
                         ClearPattern(3);
+                        cleanpattern[0] = 0;
+                        cleanpattern[1] = 0;
+                        Log.d(TAG,"pattern match pattern-"+i+"; "+cmp+" is larger than "+thresholdforpattern[i-1]*thforcamera);
                     }
                     //record the groundtruth
                     GroundTruthValue groundTruthValue = new GroundTruthValue();
@@ -471,7 +519,7 @@ public class CacheScan {
 
                     if (i==2) {
                         lastaudio = time;
-                        if (lastaudio - lastcamera < 2500) {//if the camera follow audio tightly
+                        if (lastaudio - lastcamera < 2500||(pkg_permission.get(app)&i)!=i) {//if the camera follow audio tightly
                             Log.d(TAG, "Skip a audio event" + (lastaudio - lastcamera));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -481,7 +529,7 @@ public class CacheScan {
                     if (i==1)//if camera is active, we should handle audio api, since it will come with camera api
                     {
                         lastcamera = time;
-                        if (lastcamera - lastaudio < 2500) {
+                        if (lastcamera - lastaudio < 2500||(pkg_permission.get(app)&i)!=i) {
                             Log.d(TAG, "Skip a camera event" + (lastcamera - lastaudio));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -549,6 +597,32 @@ public class CacheScan {
         intent.putExtra("app",app);
         intent.putExtra("flag",flag);
         intent.putExtra("ignored",ignored);
+    }
+
+    private void ResetThreshold() {
+        if (!reset_thresh) {
+            int threshold = getthreshold();
+            if (threshold != 0) {
+                Log.d(TAG, "The current threshold " + threshold);
+                SharedPreferences edit = mContext.getSharedPreferences("user", 0);
+                int threshold_pre = edit.getInt("threshold", 3000);
+                SharedPreferences.Editor editor = edit.edit();
+                Log.d(TAG, "Get the threshold with the lowest count " + threshold_pre);
+                if (threshold_pre == 0) {
+                    editor.putInt("threshold", threshold);
+                    return;
+                }
+                if (threshold < threshold_pre) {
+                    Log.d(TAG, "Found a lower threshold " + threshold);
+                    editor.putInt("threshold", threshold);
+                } else if (threshold > threshold_pre) {
+                    Log.d(TAG, "Current threshold is too big, set it to a previous lower one:" + threshold_pre);
+                    setthreshold(threshold_pre);
+                }
+                reset_thresh = true;
+                editor.apply();
+            }
+        }
     }
 
     private String[] exec(String target) {

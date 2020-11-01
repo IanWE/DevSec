@@ -5,6 +5,9 @@
 #include <ostream>
 #include <pthread.h>
 #include <libflush/hit.h>
+#include <logoutput.h>
+#include <vector>
+
 //#include "native-lib.cpp"
 extern int finishtrial1;
 extern jint* filter;
@@ -20,11 +23,16 @@ extern int log_length;
 extern int logs[300000];
 extern long times[300000];
 extern int thresholds[300000];
+extern int pausescan;
 
 extern int length_of_camera_audio[2];
 extern int* camera_pattern;
 extern int* audio_pattern;
 int length = 0;
+int printpattern[] = {0,0};
+extern std::vector<std::string> camera_list;
+extern std::vector<std::string> audio_list;
+
 extern "C" JNIEXPORT jintArray JNICALL
         Java_com_SMU_DevSec_CacheScan_CacheCheck(JNIEnv *env, jobject thiz){
         jintArray ja = env->NewIntArray(compiler_position);
@@ -46,6 +54,19 @@ Java_com_SMU_DevSec_CacheScan_GetPattern(JNIEnv *env, jobject thiz, jint c){
     jint *arr = env->GetIntArrayElements(ja, NULL);
     if (audio_pattern != NULL) {//audio is after camera
         int *t = (c==1?camera_pattern:audio_pattern);
+        if(printpattern[c-1]==0) {
+            LOGD("=======================================");
+            for (int i = 0; i < length_of_camera_audio[c-1]; i++) {//camera
+                if (t[i] == 1) {
+                    if (c == 1)
+                        LOGD("*** Camera Pattern %s ***", camera_list[i].c_str());
+                    else
+                        LOGD("*** Audio Pattern %s ***", audio_list[i].c_str());
+                }
+            }
+            //printpattern[c-1]++;
+            LOGD("=======================================");
+        }
         pthread_mutex_lock(&g_lock);
         memcpy(arr, t, sizeof(int) * length);
         pthread_mutex_unlock(&g_lock);
@@ -174,10 +195,10 @@ JNIEXPORT jintArray JNICALL
 Java_com_SMU_DevSec_TrialModelStages_getFilter(JNIEnv *env, jclass clazz) {
     // TODO: implement getFilter()
     finishtrial1 = 1;//stop scan
-    int length_alive_function = length_of_camera_audio[0]+length_of_camera_audio[1];
-    jintArray ja = env->NewIntArray(length_alive_function);
+    int length_function = length_of_camera_audio[0]+length_of_camera_audio[1];
+    jintArray ja = env->NewIntArray(length_function);
     jint* arr = env->GetIntArrayElements(ja, NULL);
-    memcpy(arr,filter,sizeof(int)*length_alive_function);
+    memcpy(arr,filter,sizeof(int)*length_function);
     env->ReleaseIntArrayElements(ja, arr, 0);
     return ja;
 }
@@ -186,4 +207,9 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_SMU_DevSec_TrialModelStages_flush(JNIEnv *env, jclass clazz,jint c) {
     flush_address((size_t*)addr[c],length_of_camera_audio[c-1]);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_SMU_DevSec_CacheScan_pause(JNIEnv *env, jobject thiz,jint p){
+    pausescan = p;
 }

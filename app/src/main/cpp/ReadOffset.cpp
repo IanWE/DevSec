@@ -32,7 +32,7 @@ jobjectArray Decompress(JNIEnv* env,jstring jstr){
 }
 
 void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr, char** funcs, \
-        std::string read_file, size_t length, size_t &current_length) {
+        std::string read_file, size_t length, size_t &current_length,std::vector<std::string> &camera_list,std::vector<std::string> &audio_list) {
     LOGD("Parsing Oat:%s",read_file.c_str());
     Art::OATParser oatParser;
     if (!oatParser.ParseOatFile(read_file)) {//parse OAT file
@@ -89,6 +89,10 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
                         if(f[t]==NULL){//record the addr only if it is the first run
                             //LOGD("Found class %s",(char *)classnames[cls].c_str());
                             length_of_camera_audio[k]++;
+                            if(k==0)
+                                camera_list.push_back(classnames[cls]+func_list[cls][fc]);
+                            else
+                                audio_list.push_back(classnames[cls]+func_list[cls][fc]);
                             int l = length_of_camera_audio[k];
                             Art::OATParser::OatClass oatcls = oat_dex_storages[i]->GetOatClass(cls);
                             Art::OATParser::OatMethod m = oatcls.GetOatMethod(fc);
@@ -151,7 +155,7 @@ void ReadSo(JNIEnv* env, void* start, size_t* addr, char** funcs, \
 }//1
 
 void ReadOffset(JNIEnv* env, std::string dex, size_t* addr, char** funcs, \
-         size_t length, std::string filename) {
+         size_t length, std::string filename,std::vector<std::string> &camera_list,std::vector<std::string> &audio_list) {
     static size_t current_length = 0;
     void *start = NULL;
     void *end = NULL;
@@ -181,7 +185,7 @@ void ReadOffset(JNIEnv* env, std::string dex, size_t* addr, char** funcs, \
     LOGD("size: %d of filename %s, loaded at %p",sb.st_size,filename.c_str(),s);
     //fclose(reinterpret_cast<FILE *>(fd));
     if (!strcmp(suffix.c_str(), "oat") || !strcmp(suffix.c_str(), "odex")) {
-        ReadOatOffset(env, s, dex, addr, funcs, filename, length, current_length);
+        ReadOatOffset(env, s, dex, addr, funcs, filename, length, current_length,camera_list,audio_list);
     }
     // ==================Read so library==========================
     if (!strcmp(suffix.c_str(), "so")) {
