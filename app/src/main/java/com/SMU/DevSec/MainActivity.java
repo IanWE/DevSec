@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private Button buttoninc,buttondec;
     public static final int SIZE_LIMIT = 20;
     public static final int TIME_INTERVAL = 10;
-    public static boolean isCollected = false;
+    public static boolean isCollected = false;//whether got data
     static String trial;
     static long lastday = 0;
     static long day = 1;
@@ -147,7 +147,8 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences edit = getSharedPreferences("user", 0);
         final String name = edit.getString("RSA", "None");
-        trial = edit.getString("trialmodel", "0");
+        trial = edit.getString("trialmodel", "0");//
+        //trial = "1";
         //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxx"+trial);
         if(check){
             if(!SideChannelJob.continueRun) {
@@ -233,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(trial.equals("1")) {
             TimerManager.getInstance(getBaseContext()).schedule_upload();
-            TimerManager.getInstance(getBaseContext()).schedule();
+            //TimerManager.getInstance(getBaseContext()).schedule();
             mSwitch.setChecked(true);
         }
     }
@@ -373,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
                     pm.checkPermission("android.permission.CAMERA", packageName));
             if(flag)
                 type+=1;
-            Log.d("xxxxxxxxxxx",packageName+" "+type);
+            //Log.d("xxxxxxxxxxx",packageName+" "+type);
             return type;
             } catch (Exception ex) {
             ex.printStackTrace();

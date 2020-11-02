@@ -205,7 +205,7 @@ adjust_threshold(int threshold, int* length_of_camera_audio, size_t* addr, int* 
     libflush_session_t *libflush_session;
     libflush_init(&libflush_session, NULL);
     if(threshold==9999){//if caliberation failed
-        return 9999;
+        return threshold;
     }
     size_t t=0;
     int f=0;

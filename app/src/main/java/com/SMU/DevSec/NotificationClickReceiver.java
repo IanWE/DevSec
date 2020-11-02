@@ -33,9 +33,9 @@ public class NotificationClickReceiver extends BroadcastReceiver {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         manager.cancel(event);
 
-        if(event==1){//if it is camera event
-            lastactivetime = Utils.getCurTimeLong();
-        }
+        //if(event==1){//if it is camera event
+        lastactivetime = Utils.getCurTimeLong();
+
         UserFeedback userFeedback = new UserFeedback();//create a feedback
         userFeedback.setArisingtime(arise);
         userFeedback.setEvent(event);

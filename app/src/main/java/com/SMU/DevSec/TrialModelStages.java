@@ -52,6 +52,8 @@ public class TrialModelStages {
             //stage1
             //if(s_1==0)
             //    return 1;
+            if(CacheScan.getthreshold()==9999)
+                return 2;
             int[] pattern_filter = getFilter();
             Log.d(TAG, "The Number of Filtered Addresses in Camera and Audio:" + Utils.sum(pattern_filter));
             Utils.saveArray(mContext, pattern_filter, "ptfilter");
@@ -162,6 +164,7 @@ public class TrialModelStages {
                     }
                     if(r==1) {
                         if (s == 0) {
+                            /*
                             //if(s_1==0){
                             //    s_1 = 1;
                             //    alertDialog.cancel();
@@ -173,6 +176,16 @@ public class TrialModelStages {
                             alertDialog.cancel();
                             getInstance(mContext).startDialog();
                             return;
+                             */
+                            showToast("Thanks, you have completed all the trials.");
+                            stop = true;
+                            editor.putString("trialmodel","1");
+                            editor.putLong("lastday",System.currentTimeMillis() / (1000 * 60 * 60 * 24));
+                            editor.putLong("day",0);
+                            editor.apply();
+                            alertDialog.cancel();
+                            Intent intent = new Intent(mContext, AfterTrialModel.class);
+                            mContext.startActivity(intent);
                         }
                         if (s == 1) {
                             s = 2;

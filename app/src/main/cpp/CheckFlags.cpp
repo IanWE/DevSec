@@ -11,6 +11,7 @@
 //#include "native-lib.cpp"
 extern int finishtrial1;
 extern jint* filter;
+extern int t[];
 
 extern int* flags;
 extern size_t* addr;
@@ -39,12 +40,21 @@ extern "C" JNIEXPORT jintArray JNICALL
         jint *arr = env->GetIntArrayElements(ja, NULL);
         if(flags!=NULL) {
             pthread_mutex_lock(&g_lock);
-            memcpy(arr,flags,sizeof(int)*compiler_position);
+            memcpy(arr,flags,sizeof(int)*(compiler_position-1));//do not need the compiler activation
             pthread_mutex_unlock(&g_lock);
             env->ReleaseIntArrayElements(ja, arr, 0);
             return ja;
         }
         return NULL;
+}
+
+extern "C" JNIEXPORT jintArray JNICALL
+Java_com_SMU_DevSec_CacheScan_GetT(JNIEnv *env, jobject thiz){
+    jintArray ja = env->NewIntArray(2);
+    jint *arr = env->GetIntArrayElements(ja, NULL);
+    memcpy(arr,t,sizeof(int)*2);
+    env->ReleaseIntArrayElements(ja, arr, 0);
+    return ja;
 }
 
 extern "C" JNIEXPORT jintArray JNICALL

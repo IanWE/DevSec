@@ -39,7 +39,7 @@ public class AfterTrialModel extends AppCompatActivity {
         String trial = preferences.getString("trialmodel","0");
         String info = "    Thanks for conducting the hardware test. You can restart the app to join the user study now.";
         if(trial.equals("2"))
-            info = "    Thanks for conducting the hardware test. We are sorry to inform you that your phone is compatible with our userstudy.";
+            info = "    Thanks for conducting the hardware test. We are sorry to inform you that your phone is not compatible with our userstudy.";
         tv.setText(info);
         Button finish_button = findViewById(R.id.exit);
         finish_button.setOnClickListener(new View.OnClickListener() {

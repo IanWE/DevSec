@@ -143,7 +143,7 @@ public class TimerManager {
                     Log.d(TAG, "Job cancelled");
                 }
             }
-        }, 60*1000, TIME_INTERVAL*60*1000);
+        }, 10*60*1000, TIME_INTERVAL*60*1000);
     }
 
     // 增加或减少天数
@@ -173,6 +173,22 @@ public class TimerManager {
     void uploadLogs() {
         SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
         name = edit.getString("RSA", "None");
+        /*
+        boolean logs = edit.getBoolean("logs",false);//upload once
+        if(!logs) {
+            LogcatHelper.getInstance(mContext).start();
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "error : ", e);
+            }
+            //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxxxxx");
+            LogcatHelper.getInstance(mContext).stop();
+            SharedPreferences.Editor editor = edit.edit();
+            editor.putBoolean("logs",true);//record
+            editor.apply();
+        }
+        */
         if(!name.equals("None")) {
             Log.i("uploading", "upload logs start");
             //上传文件

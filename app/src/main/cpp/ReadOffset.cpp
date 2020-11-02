@@ -105,9 +105,9 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
                                 *((size_t *) addr[current_length + t] + l - 1) =
                                         (size_t) start + m.GetOffset() +
                                         oatParser.GetOatHeaderOffset();
-                                LOGD("Function:%s %s and offset %x, %p",
-                                     classnames[cls].c_str(),func_list[cls][fc].c_str(), m.GetOffset(),
-                                     *((size_t *) addr[current_length + t] + l - 1));
+                                //LOGD("Function:%s %s and offset %x, %p",
+                                //     classnames[cls].c_str(),func_list[cls][fc].c_str(), m.GetOffset(),
+                                //     *((size_t *) addr[current_length + t] + l - 1));
                             }
                         }
                         else if(!strcmp((char *) func_list[cls][fc].c_str(), f[t])) {

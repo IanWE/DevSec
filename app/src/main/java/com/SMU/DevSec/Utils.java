@@ -208,8 +208,10 @@ public class Utils {
         } catch (IOException e) {
             e.printStackTrace();
         } finally{
-            zos.close();
-            fis.close();
+            if(zos!=null)
+                zos.close();
+            if(fis!=null)
+                fis.close();
         }
     }
 

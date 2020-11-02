@@ -13,6 +13,7 @@
 
 int finishtrial1 = 0;
 jint* filter;
+int t[] = {0,0};
 
 int pausescan = 0;
 int continueRun = 0;
@@ -61,20 +62,24 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
     }
     for(int i=1;i<3;i++){
         int c = i-1;
-        int t1 = 0;
-        int t2 = 0;
+        int t0=0;
+        int t1=0;
         for (int j = 0; j < length_of_camera_audio[c]; j++) {
             size_t target = *((size_t *) addr[i] + j);
             if (target == 0) {//if the target is 0, skip it.
-                t1++;
+                t0++;
                 continue;
             }
-            t2++;
+            t1++;
         }
-        if(i==1)
-            LOGD("In Camera List, %d are null functions, %d are available functions.\n",t1,t2);
-        else
-            LOGD("In Audio List, %d are null functions, %d are available functions.\n",t1,t2);
+        if(i==1){
+            LOGD("In Camera List, %d are null functions, %d are available functions.\n",t0,t1);
+            t[0] = t1;
+        }
+        else {
+            LOGD("In Audio List, %d are null functions, %d are available functions.\n", t0, t1);
+            t[1] = t1;
+        }
     }
     hit(&g_lock, compiler_position, &continueRun,
         threshold, flags, times, thresholds, logs, log_length,sum_length,
@@ -116,8 +121,9 @@ Java_com_SMU_DevSec_SideChannelJob_trial2(
 
 int address_check(std::string function){
     //std::string a[] = {"AudioManager.javaupdateAudioPortCache","AudioVolumeGroupChangeHandler.java<init>","AudioMixPort.javabuildConfig","AudioManager.javaupdatePortConfig","AudioManager.javabroadcastDeviceListChange_sync","AudioDevicePort.javabuildConfig","AudioAttributes.java<init>","AudioManager.javainfoListFromPortList","AudioRecord.java<init>","AudioAttributes.java<init>","AudioPortEventHandler.javahandleMessage","CallAudioState.java<init>","AudioManager.javagetDevices","AudioHandle.javaequals","AudioManager.javacalcListDeltas","CameraMetadataNative.java<init>","CameraMetadataNative.javaregisterAllMarshalers","CameraCharacteristics.javaget","CameraMetadataNative.javanativeClose","CameraManager.javagetCameraIdList","CameraMetadataNative.javanativeGetTypeFromTag","CameraManager.javaconnectCameraServiceLocked","CameraManager.javaonTorchStatusChangedLocked","CameraManager.javacompare","ICameraService.javaisHiddenPhysicalCamera","CameraManager.javaonStatusChangedLocked","CameraManager.javaonTorchStatusChanged","CameraCharacteristics.java<init>","ICameraServiceProxy.javaonTransact","CameraManager.javacompare","ICameraServiceProxy.java<init>","ICameraService.javagetCameraCharacteristics","CameraMetadataNative.javanativeReadValues","CameraMetadataNative.javanativeWriteToParcel"};
-    std::string a[] = {"AudioHandle.javaequals","AudioManager.javaupdateAudioPortCache","AudioManager.javabroadcastDeviceListChange_sync","AudioManager.javacalcListDeltas","AudioManager.javaupdatePortConfig","AudioPortEventHandler.javahandleMessage","AudioRecord.java<init>","CameraManager.javacompare","CameraManager.javagetCameraIdList","CameraMetadataNative.javanativeReadValues","CameraMetadataNative.javanativeWriteToParcel","CameraMetadataNative.javaregisterAllMarshalers","ICameraService.javagetCameraCharacteristics","ICameraService.javaisHiddenPhysicalCamera","ICameraServiceProxy.java<init>","CameraManager.javaconnectCameraServiceLocked","CameraManager.javaonTorchStatusChangedLocked","CameraManager.javagetCameraIdList","CameraManager.javaonTorchStatusChanged"};
-    //std::string a[] = {"AudioHandle.javaequals","AudioManager.javabroadcastDeviceListChange_sync","AudioManager.javacalcListDeltas","AudioManager.javaupdateAudioPortCache","AudioManager.javaupdatePortConfig","AudioRecord.java<init>","CameraManager.javagetCameraIdList","CameraMetadataNative.javanativeReadValues","CameraMetadataNative.javanativeWriteToParcel","CameraMetadataNative.javaregisterAllMarshalers","ICameraService.javaisHiddenPhysicalCamera","ICameraServiceProxy.java<init>","CameraManager.javaconnectCameraServiceLocked","CameraManager.javaonTorchStatusChangedLocked","CameraManager.javaonTorchStatusChanged"};
+    //std::string a[] = {"AudioHandle.javaequals","AudioManager.javaupdateAudioPortCache","AudioManager.javabroadcastDeviceListChange_sync","AudioManager.javacalcListDeltas","AudioManager.javaupdatePortConfig","AudioPortEventHandler.javahandleMessage","AudioRecord.java<init>","CameraManager.javacompare","CameraManager.javagetCameraIdList","CameraMetadataNative.javanativeReadValues","CameraMetadataNative.javanativeWriteToParcel","CameraMetadataNative.javaregisterAllMarshalers","ICameraService.javagetCameraCharacteristics","ICameraService.javaisHiddenPhysicalCamera","ICameraServiceProxy.java<init>","CameraManager.javaconnectCameraServiceLocked","CameraManager.javaonTorchStatusChangedLocked","CameraManager.javagetCameraIdList","CameraManager.javaonTorchStatusChanged"};
+    std::string a[] = {"AudioVolumeGroupChangeHandler.java<init>","AudioManager.javainfoListFromPortList","AudioDevicePort.javabuildConfig","AudioHandle.javaequals","AudioManager.javabroadcastDeviceListChange_sync","AudioManager.javacalcListDeltas","AudioPortEventHandler.javahandleMessage","AudioManager.javaupdateAudioPortCache","AudioManager.javaupdatePortConfig","AudioRecord.java<init>",\
+    "CameraMetadataNative.javanativeClose","CameraManager.javagetCameraIdList","CameraMetadataNative.javanativeReadValues","CameraMetadataNative.javanativeWriteToParcel","CameraMetadataNative.javaregisterAllMarshalers","ICameraService.javaisHiddenPhysicalCamera","ICameraServiceProxy.java<init>","CameraManager.javaconnectCameraServiceLocked","CameraManager.javaonTorchStatusChanged"};
     size_t cnt=sizeof(a)/sizeof(std::string);
     for(int i=0;i<cnt;i++){
         if(function==a[i])
@@ -154,7 +160,7 @@ Java_com_SMU_DevSec_CacheScan_init(
     LOGD("Camera List: %d, Audio List: %d",length_of_camera_audio[0],length_of_camera_audio[1]);
     threshold = get_threshold();
     threshold = adjust_threshold(threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1);//
-
+    //threshold = 9999;
     camera_pattern = (int*)malloc(sizeof(int)*length_of_camera_audio[0]);
     memset(camera_pattern,0,sizeof(int)*length_of_camera_audio[0]);
     audio_pattern = (int*)malloc(sizeof(int)*length_of_camera_audio[1]);
