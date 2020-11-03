@@ -14,14 +14,15 @@ import static com.SMU.DevSec.SideChannelJob.compilerValues;
 import static com.SMU.DevSec.SideChannelJob.frontAppValues;
 import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
 import static com.SMU.DevSec.SideChannelJob.locker;
+import static com.SMU.DevSec.SideChannelJob.sideChannelValues;
 import static com.SMU.DevSec.SideChannelJob.userFeedbacks;
 import static com.SMU.DevSec.Utils.DATABASE_FILENAME;
 import static com.SMU.DevSec.Utils.DATABASE_PATH;
 
 class JobInsertRunnable implements Runnable {
     Context context;
-    ArrayList<SideChannelValue> sideChannelValues;
     /*
+    ArrayList<SideChannelValue> sideChannelValues;
     ArrayList<GroundTruthValue> groundTruthValues;
     ArrayList<UserFeedback> userFeedbacks;
     ArrayList<FrontAppValue> frontAppValues;
@@ -37,11 +38,9 @@ class JobInsertRunnable implements Runnable {
      * Constructor for this class
 
      * @param context:           Android activity context for opening the database
-     * @param sideChannelValues: ArrayList of SideChannelValue objects to be inserted into the database
      */
-    public JobInsertRunnable(Context context, ArrayList<SideChannelValue> sideChannelValues) {
+    public JobInsertRunnable(Context context) {
         this.context = context;
-        this.sideChannelValues =  sideChannelValues;
         /*
         this.groundTruthValues = groundTruthValues;
         this.userFeedbacks = userFeedbacks;
@@ -162,6 +161,7 @@ class JobInsertRunnable implements Runnable {
         userFeedbacks = new ArrayList<>();
         compilerValues = new ArrayList<>();
         frontAppValues = new ArrayList<>();
+        sideChannelValues = new ArrayList<>();
         insert_locker.unlock();
         boolean ifcompress = Utils.checkfile(context);//get the size of db
         if(ifcompress) {//if the db is large than limit size, compress it.

@@ -48,7 +48,7 @@ public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
     private static final String TAG = "JobService";
     private static int label=0;
-    ArrayList<SideChannelValue> sideChannelValues;
+    public static ArrayList<SideChannelValue> sideChannelValues;
     public static ArrayList<GroundTruthValue> groundTruthValues;
     public static ArrayList<UserFeedback> userFeedbacks;
     public static ArrayList<CompilerValue> compilerValues;
@@ -210,7 +210,9 @@ public class SideChannelJob extends Service {
                                     Log.d(TAG, e.toString());
                                     Log.d(TAG, "Get Traffic info Failed");
                                 }
+                                insert_locker.lock();
                                 sideChannelValues.add(sideChannelValue);
+                                insert_locker.unlock();
                             }
                             // Compute cumulative time to collect 100 sets of side channel values
                             long deltaTime = System.currentTimeMillis() - startTime;
@@ -248,12 +250,9 @@ public class SideChannelJob extends Service {
                         // Send side channel values to a new thread and start data collection in another
                         // different thread after collecting 1000 sets of side channel values
                         if (count % 1020 == 0) {
-                            new Thread(new JobInsertRunnable(getBaseContext(), sideChannelValues)).start();
+                            new Thread(new JobInsertRunnable(getBaseContext())).start();
                             Log.d(TAG, "DB Updated");
                             //Clear the updated data
-                            insert_locker.lock();//lock until the inserting finished.
-                            sideChannelValues = new ArrayList<>();
-                            insert_locker.unlock();
                             index = 1;
                             scValueCount = 0;
                             cumulativeTime = 0;
@@ -364,28 +363,27 @@ public class SideChannelJob extends Service {
     public void onDestroy(){
         super.onDestroy ();
         final long minutes = (System.currentTimeMillis()-start_time)/(1000*60);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String r = TimerManager.getInstance(mContext).uploadTimeCheck(minutes);//
-                if(r!=null&&r.equals("1"))
-                    Log.d(TAG,"Running time are uploaded successfully");
-                else
-                    Log.d(TAG,"Unable to upload the running time");
-            }
-        }).start();
         pause();
         //locker.lock();
-        if(stage==0)//not in trial mode
-            new Thread(new JobInsertRunnable(getBaseContext(),sideChannelValues)).start();
+        if(stage==0) {//not in trial mode
+            new Thread(new JobInsertRunnable(getBaseContext())).start();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String r = TimerManager.getInstance(mContext).uploadTimeCheck(minutes);//
+                    if(r!=null&&r.equals("1"))
+                        Log.d(TAG,"Running time are uploaded successfully");
+                    else
+                        Log.d(TAG,"Unable to upload the running time");
+                }
+            }).start();
+        }
         //locker.unlock();
         insert_locker.lock();//lock until the inserting finished.
         sideChannelValues = new ArrayList<>();
         insert_locker.unlock();
         continueRun = false;
         Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
-                .show();
-        Toast.makeText(this, "Stopped data collection", Toast.LENGTH_SHORT)
                 .show();
         SharedPreferences edit = getBaseContext().getSharedPreferences("user",0);
         SharedPreferences.Editor editor = edit.edit();

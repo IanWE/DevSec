@@ -446,13 +446,12 @@ public class MainActivity extends AppCompatActivity {
      */
     public boolean cancelJob(View v) {
         Intent stop=new Intent (this,SideChannelJob.class);
-        if(!check) {
+        if(!check&&isrunning()==0) {
             Toast.makeText(this, "Please try it later.", Toast.LENGTH_SHORT)
                     .show();
             return false;
         }
         stopService(stop);
-        SideChannelJob.continueRun = false;
         checkRunStatus(SideChannelJob.continueRun);
         Log.d(TAG, "Job cancelled");
         return true;
@@ -539,6 +538,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public static native int isrunning();
 /*
     public void onClick(View v) {
         if(!check){

@@ -41,9 +41,10 @@ public class TrialModel extends AppCompatActivity {
             public void onClick(View v) {
                 if (CacheScan.CacheCheck() == null) {//check if initiated well.
                     showToast("App is initializing, try it a bit later");
-                    return;
                 }
-                TrialModelStages.getInstance(TrialModel.this).startDialog();
+                else {
+                    TrialModelStages.getInstance(TrialModel.this).startDialog();
+                }
             }
         });
 

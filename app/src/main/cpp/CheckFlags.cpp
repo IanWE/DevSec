@@ -33,6 +33,7 @@ int length = 0;
 int printpattern[] = {0,0};
 extern std::vector<std::string> camera_list;
 extern std::vector<std::string> audio_list;
+extern int running;
 
 extern "C" JNIEXPORT jintArray JNICALL
         Java_com_SMU_DevSec_CacheScan_CacheCheck(JNIEnv *env, jobject thiz){
@@ -220,6 +221,6 @@ Java_com_SMU_DevSec_TrialModelStages_flush(JNIEnv *env, jclass clazz,jint c) {
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_SMU_DevSec_CacheScan_pause(JNIEnv *env, jobject thiz,jint p){
-    pausescan = p;
+Java_com_SMU_DevSec_MainActivity_isrunning(JNIEnv *env, jobject thiz){
+    return running;
 }

@@ -30,6 +30,7 @@ int thresholds[300000] = {0};
 int length_of_camera_audio[2] = {0,0};
 pthread_mutex_t g_lock;
 
+int running = 0;
 int* camera_pattern;
 int* audio_pattern;
 int camera_audio[] = {1,2};//indexes of camera list and audio list
@@ -82,9 +83,10 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
         }
     }
     hit(&g_lock, compiler_position, &continueRun,
-        threshold, flags, times, thresholds, logs, log_length,sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr);
-    LOGD("Finished scanning");
+        threshold, flags, times, thresholds, logs, log_length, sum_length,
+        camera_pattern, audio_pattern, length_of_camera_audio, addr, &running);
+    running = 0;
+    LOGD("Finished scanning %d",running);
     return env->NewStringUTF("");
 }
 
@@ -115,7 +117,7 @@ Java_com_SMU_DevSec_SideChannelJob_trial2(
     continueRun = 1;
     hit(&g_lock, compiler_position, &continueRun,
         threshold, flags, times, thresholds, logs, log_length, sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr);
+        camera_pattern, audio_pattern, length_of_camera_audio, addr, nullptr);
     LOGD("Finish TrialMode 2");
 }
 

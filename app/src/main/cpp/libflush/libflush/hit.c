@@ -43,9 +43,11 @@ static int shared_data_shm_fd = 0;
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 /* Forward declarations */
-void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock, int compiler_position,int *continueRun,
-                         int threshold, int* flags, long* times, int* thresholds, int* logs, int log_length,int sum_length,
-                         int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr);
+void
+attack_slave(libflush_session_t *libflush_session, pthread_mutex_t *g_lock, int compiler_position,
+             int *continueRun, int threshold, int *flags, long *times, int *thresholds, int *logs,
+             int log_length, int sum_length, int *camera_pattern, int *audio_pattern,
+             int *length_of_camera_audio, size_t *addr, int *running);
 /*
 #define TAG_NAME "libflush"
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)
@@ -260,9 +262,10 @@ adjust_threshold(int threshold, int* length_of_camera_audio, size_t* addr, int* 
     return threshold;
 }
 
-int hit(pthread_mutex_t *g_lock, int compiler_position, int *continueRun,
-        int threshold, int* flags, long* times, int* thresholds, int* logs, int log_length, int sum_length,
-        int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr)
+int hit(pthread_mutex_t *g_lock, int compiler_position, int *continueRun, int threshold, int *flags,
+        long *times, int *thresholds, int *logs, int log_length, int sum_length,
+        int *camera_pattern, int *audio_pattern, int *length_of_camera_audio, size_t *addr,
+        int *running)
 {
     LOGD("Start.\n");
 
@@ -284,8 +287,8 @@ int hit(pthread_mutex_t *g_lock, int compiler_position, int *continueRun,
     LOGD("[x] Threshold: %zu\n", threshold);
     /* Start slaves */
     attack_slave(libflush_session, g_lock, compiler_position, continueRun,
-        threshold, flags, times, thresholds, logs, log_length,sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr);
+                 threshold, flags, times, thresholds, logs, log_length, sum_length,
+                 camera_pattern, audio_pattern, length_of_camera_audio, addr, running);
     /* Terminate libflush */
     libflush_terminate(libflush_session);
     return 0;
@@ -324,9 +327,11 @@ void flush_address(size_t* address,int length){
 }
 
 //when use static, the location function keeps poping
-void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock, int compiler_position,int *continueRun,
-        int threshold, int* flags, long* times, int* thresholds, int* logs, int log_length,int sum_length,
-        int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr){
+void
+attack_slave(libflush_session_t *libflush_session, pthread_mutex_t *g_lock, int compiler_position,
+             int *continueRun, int threshold, int *flags, long *times, int *thresholds, int *logs,
+             int log_length, int sum_length, int *camera_pattern, int *audio_pattern,
+             int *length_of_camera_audio, size_t *addr, int *running) {
     struct timeval tv;//for quering time stamp
     //gettimeofday(&tv,NULL);
     libflush_init(&libflush_session, NULL);
@@ -334,7 +339,8 @@ void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock,
     //uint64_t start = libflush_get_timing(libflush_session);
     int turns = 0;
     int length = compiler_position;
-    LOGD("[x] start scaning %d",compiler_position);
+    *running = 1;
+    LOGD("[x] start scaning %d-%d",compiler_position,*running);
     while(*continueRun){
       // if the turns reached 10000 or the same offset was hit more than many times repetitively, shrink the list;
         if(turns>=100000){

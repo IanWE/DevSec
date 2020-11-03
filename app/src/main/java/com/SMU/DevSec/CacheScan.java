@@ -85,8 +85,8 @@ public class CacheScan {
     ArrayList<int[]> ALpattern = new ArrayList<int[]>();
     int[] thresholdforpattern = {9,10};//number of different functions
     String BehaviorList[] = {"Information","Camera","AudioRecorder","Location"};
-    double audio_threshold_level = 0.3;
-    double camera_threshold_level = 0.3;
+    double audio_threshold_level = 0.25;
+    double camera_threshold_level = 0.25;
     int[] cleanpattern = {0,0};
     String AppStringforcheck = "";
     long firsthit = 0;
@@ -169,8 +169,8 @@ public class CacheScan {
             //thresholdforpattern[i] = Utils.sum(ALpattern.get(i));
         //    thresholdforpattern[i] = ALpattern.get(i).length;
         //}
-        thresholdforpattern[0] = 9;
-        thresholdforpattern[1] = 9;
+        thresholdforpattern[0] = 10;
+        thresholdforpattern[1] = 10;
         init(dexlist,filenames,func_lists);//initiate the JNI function
         //ResetThreshold();
         //if(thresholdforpattern[0]<10)
@@ -505,10 +505,10 @@ public class CacheScan {
                         double thforaudio = audio_threshold_level;
                         //cmp = Utils.pattern_compare(ALpattern.get(i - 1), pattern);
                         cmp = Utils.sum(pattern);
-                        if((AppStringforcheck.equals("None")||i==1)&&cmp<(int)(thresholdforpattern[i-1]*thforcamera)){
+                        if(cmp<=(int)(thresholdforpattern[i-1]*thforcamera)){
                             cleanpattern[i-1]++;
                             HandleCapture(i);
-                            if(cleanpattern[i-1]>5){
+                            if(cleanpattern[i-1]>5){//accumulating
                                 cleanpattern[i-1] = 0;
                                 ClearPattern(i);
                                 Log.d(TAG,"pattern-"+i+" clear : "+cmp);
@@ -516,6 +516,7 @@ public class CacheScan {
                             Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforcamera);
                             continue;
                         }
+                        /*
                         else if((AppStringforcheck.equals("None")||i==2)&&cmp<(int)(thresholdforpattern[i-1]*thforaudio)){//when audio activated, camera should less than 50% activation,ortherwise pop a camera event
                             cleanpattern[i-1]++;
                             HandleCapture(i);
@@ -528,15 +529,15 @@ public class CacheScan {
                             Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforaudio);
                             continue;
                         }
+                        */
                         else if(i==2) {
                             int[] patternX = GetPattern(1);
                             //int sumcpattern = Utils.pattern_compare(ALpattern.get(0), patternX);
                             int sumcpattern = Utils.sum(patternX);
-                            if (sumcpattern >= (int)(thresholdforpattern[0] * (thforcamera))) {
+                            if (sumcpattern >(int)(thresholdforpattern[0] * (thforcamera))) {
                                 HandleCapture(i);
                                 Log.d(TAG, "Camera pattern is " + sumcpattern + ". Skip audio event.");
                                 i = 1;
-                                //continue;
                             }
                         }//avaupdateAudioPortCache
                         ClearPattern(3);

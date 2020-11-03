@@ -115,7 +115,7 @@ public class TrialModelStages {
             if(s==0){
                 //if(s_1!=0) {
                     //ssb.append("You are at stage 1. We will need " + seconds + " seconds to check the functions. Please switch to the home page and wait for "+seconds+" seconds; then switch back.");
-                ssb.append("You are at stage 1. We will need " + seconds + " seconds to check the functions. Please do not use camera or audiorecording function during this period.");
+                ssb.append("You are at the trial mode. We will need " + seconds + " seconds to check the functions. Please do not use camera or audiorecording function during this period.");
                 new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -186,6 +186,11 @@ public class TrialModelStages {
                             editor.apply();
                             alertDialog.cancel();
                             Intent intent = new Intent(mContext, AfterTrialModel.class);
+                            try {
+                                Thread.sleep(200);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                             mContext.startActivity(intent);
                         }
                         if (s == 1) {
