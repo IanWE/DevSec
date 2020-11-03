@@ -48,7 +48,6 @@ import static com.SMU.DevSec.MainActivity.pkg_name;
 import static com.SMU.DevSec.MainActivity.pkg_permission;
 import static com.SMU.DevSec.MainActivity.preset_threshold;
 import static com.SMU.DevSec.MainActivity.quering;
-import static com.SMU.DevSec.MainActivity.showToast;
 import static com.SMU.DevSec.MainActivity.status;
 import static com.SMU.DevSec.MainActivity.check;
 import static com.SMU.DevSec.MainActivity.trial;
@@ -178,6 +177,7 @@ public class CacheScan {
         //    camera_threshold_level = 0.8;
         //if(thresholdforpattern[1]<10)
         //    audio_threshold_level = 0.8;
+        //showToast("Intialized successfully");
         Log.d(TAG,"Threshold Level is at "+camera_threshold_level+"-"+audio_threshold_level);//only output
     }
 
@@ -480,10 +480,9 @@ public class CacheScan {
                 }
                 ischeckedaddr = true;
                 thresholdforpattern = GetT();
-                showToast("Job scheduled successfully");
             }
             updateUI(4);
-            for (int i = 0; i < Length-1; i++) {//0-3  5 6
+            for (int i = 0; i < Length; i++) {//0-3  5 6
                 String cur = target_functions.get(i);
                 if (flags[i] != 0){
                     if(i==1||i==2){

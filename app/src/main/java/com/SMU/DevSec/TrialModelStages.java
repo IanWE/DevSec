@@ -179,9 +179,10 @@ public class TrialModelStages {
                              */
                             showToast("Thanks, you have completed all the trials.");
                             stop = true;
+                            stage = 0;
                             editor.putString("trialmodel","1");
                             editor.putLong("lastday",System.currentTimeMillis() / (1000 * 60 * 60 * 24));
-                            editor.putLong("day",0);
+                            editor.putLong("day",1);
                             editor.apply();
                             alertDialog.cancel();
                             Intent intent = new Intent(mContext, AfterTrialModel.class);

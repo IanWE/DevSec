@@ -20,6 +20,9 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import static com.SMU.DevSec.TimerManager.requestUrl;
+
 /**
  * 上传文件到服务器
  */
@@ -140,8 +143,6 @@ public class SocketHttpRequester {
         return "0";
     }
 
-
-
     static String getCode(String RequestURL, String name) {
         String result = null;
         String BOUNDARY = UUID.randomUUID().toString();  //边界标识   随机生成
@@ -161,6 +162,46 @@ public class SocketHttpRequester {
                 //请求成功 获得返回的流
                 InputStream is = conn.getInputStream();
                 int ss ;
+                StringBuffer sb1= new StringBuffer();
+                while((ss=is.read())!=-1)
+                {
+                    sb1.append((char)ss);
+                }
+                result = sb1.toString();
+                return result;
+            } else {
+                //请求失败
+                return "0";
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    static String uploadRunningTime(String RequestUrl) {
+        String result = null;
+        String BOUNDARY = UUID.randomUUID().toString();  //边界标识   随机生成
+        String PREFIX = "--", LINE_END = "\r\n";
+        String CONTENT_TYPE = "multipart/form-data";   //内容类型
+
+        //String mac = getMacAddr();
+        //Log.d("uploading", mac);
+        try {
+            URL url = new URL(RequestUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setReadTimeout(3000);
+            conn.setConnectTimeout(3000);
+            conn.setRequestMethod("GET");  //请求方式
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                //请求成功 获得返回的流
+                InputStream is = conn.getInputStream();
+                int ss;
                 StringBuffer sb1= new StringBuffer();
                 while((ss=is.read())!=-1)
                 {

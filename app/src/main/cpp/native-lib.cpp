@@ -83,7 +83,7 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
     }
     hit(&g_lock, compiler_position, &continueRun,
         threshold, flags, times, thresholds, logs, log_length,sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr, &pausescan);
+        camera_pattern, audio_pattern, length_of_camera_audio, addr);
     LOGD("Finished scanning");
     return env->NewStringUTF("");
 }
@@ -102,7 +102,7 @@ Java_com_SMU_DevSec_TrialModelStages_trial1(
         JNIEnv *env, jobject thiz) {
     LOGD("Start trial 1.\n");
     int length_alive_function = length_of_camera_audio[0]+length_of_camera_audio[1];
-    memset(filter,0,length_alive_function*sizeof(int));
+    //
     stage1_(filter, threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1,sum_length); //eliminate all poping functions.
     LOGD("Finish TrialMode 1");
     return;
@@ -115,7 +115,7 @@ Java_com_SMU_DevSec_SideChannelJob_trial2(
     continueRun = 1;
     hit(&g_lock, compiler_position, &continueRun,
         threshold, flags, times, thresholds, logs, log_length, sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr, &pausescan);
+        camera_pattern, audio_pattern, length_of_camera_audio, addr);
     LOGD("Finish TrialMode 2");
 }
 
@@ -166,6 +166,7 @@ Java_com_SMU_DevSec_CacheScan_init(
     audio_pattern = (int*)malloc(sizeof(int)*length_of_camera_audio[1]);
     memset(audio_pattern,0,sizeof(int)*length_of_camera_audio[1]);
     filter = (int*)malloc(sizeof(int)*(length_of_camera_audio[0]+length_of_camera_audio[1]));
+    memset(filter,0,(length_of_camera_audio[0]+length_of_camera_audio[1])*sizeof(int));
     //disorder the array
     /*
     srand(1);
@@ -194,13 +195,12 @@ Java_com_SMU_DevSec_CacheScan_init(
         swap(audio_list[i],audio_list[t]);
     }
      */
-
     //LOGD("xxxxxxxxxxxxxxxxxxxxxxxxxxx ");
     std::string temp="";
     int found = 0;
     for(int i=0;i<length_of_camera_audio[0];i++) {
-        //if (i == 916)
-        //    LOGD("KKKKKKKKKKKKKKKKK %s", camera_list[i].c_str());
+        if (i == 1018)
+            LOGD("KKKKKKKKKKKKKKKKK %s", camera_list[i].c_str());
         if (temp == camera_list[i] && found == 1) {//only retain one function with the same name
             *((size_t *) addr[1] + i) = 0;
             filter[i] = 1;
@@ -218,8 +218,8 @@ Java_com_SMU_DevSec_CacheScan_init(
     }
     found = 0;
     for(int i=0;i<length_of_camera_audio[1];i++){
-        //if (i == 932||i==1746)
-        //    LOGD("KKKKKKKKKKKKKKKKK %s", audio_list[i].c_str());
+        if (i == 1120||i==1120)
+            LOGD("KKKKKKKKKKKKKKKKK %s", audio_list[i].c_str());
         if(temp==audio_list[i]&&found==1) {
             *((size_t*)addr[2]+i) = 0;
             filter[i] = 1;
@@ -235,6 +235,7 @@ Java_com_SMU_DevSec_CacheScan_init(
         } else
             found = 0;
     }
+    //swap(&addr[0],&addr[3]);
     flags = (int*)malloc(sum_length*sizeof(int));
     memset(flags,0,sum_length*sizeof(int));
     LOGD("Finish Initializtion");

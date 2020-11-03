@@ -56,7 +56,7 @@ import org.pytorch.Module;
 public class MainActivity extends AppCompatActivity {
     private List<AppInfo> appInfo;
     public static final String NAME = "DevSec";
-    public static final String TAG = "MainActivity";
+    public static final String TAG = "DevSec";
     private static final int PERMISSIONS_REQUEST = 0;
     public static HashMap<String, String> pkg_name = new HashMap<>();
     public static HashMap<String, Integer> pkg_permission = new HashMap<>();

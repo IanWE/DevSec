@@ -216,7 +216,7 @@ public class Utils {
     }
 
     public static boolean checkfile(Context mContext){
-        File database = new File(DATABASE_PATH + DATABASE_FILENAME);
+        File database = mContext.getDatabasePath(DATABASE_FILENAME);
         float size = 0;
         try {
             size = FormetFileSize(getFileSize(database),3);
@@ -224,7 +224,8 @@ public class Utils {
             e.printStackTrace();
         }
         if(size>SIZE_LIMIT){ //copy file
-            File dest= new File(DATABASE_PATH+TEMP_DATABASE);
+            //File dest= new File(DATABASE_PATH+TEMP_DATABASE);
+            File dest= mContext.getDatabasePath(TEMP_DATABASE);
             if (dest.exists()) {
                 dest.delete(); // delete file
             }
@@ -253,7 +254,7 @@ public class Utils {
 
     public static void compress(Context mContext){
         isCollected = true;
-        File database = new File(DATABASE_PATH + TEMP_DATABASE);
+        File database = mContext.getDatabasePath(TEMP_DATABASE);
         String compressed_filename = getCurTimeLong()/1000+".gz";
         File file = new File(mContext.getFilesDir(),compressed_filename);
         //File file = new File(FILE_PATH,compressed_filename);

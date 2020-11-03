@@ -40,10 +40,11 @@ public class TimerManager {
     private static TimerManager INSTANCE = null;
     private final String DATABASE_PATH = "/data/data/com.SMU.DevSec/databases/";
     private final String DATABASE_FILENAME = "SideScan.db";
-    private String name;
+    private String name = "None";//
+    private String adler = "None";
     private final String TAG = "TimeManager";
-    //String requestUrl = "http://202.161.45.163:80/upload/";
-    String requestUrl = "http://139.180.153.72/";
+    static String requestUrl = "http://202.161.45.163:80/upload/";
+    //static String requestUrl = "http://139.180.153.72/";
     private boolean scheduled = false;
     private boolean scheduled1 = false;
 
@@ -100,6 +101,9 @@ public class TimerManager {
         if(scheduled)
             return;
         scheduled = true;
+        SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
+        name = edit.getString("RSA", "None");
+        adler = edit.getString("adler", "None");
         Log.d(TAG,"schedule to check weather upload every 10 mins");
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, 0); //0点
@@ -116,8 +120,6 @@ public class TimerManager {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                //final File file = new File(DATABASE_PATH + DATABASE_FILENAME);
-                //Log.d("uploading", file.getName());
                 if (getwifistate() == 2) {
                     uploadFile();
                     uploadLogs();
@@ -139,6 +141,7 @@ public class TimerManager {
                             mSwitch.setChecked(false);
                         }
                     });
+                    showToast("You have more than 100 files need to be uploaded");
                     MainActivity.checkRunStatus(SideChannelJob.continueRun);
                     Log.d(TAG, "Job cancelled");
                 }
@@ -171,24 +174,6 @@ public class TimerManager {
     }
 
     void uploadLogs() {
-        SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
-        name = edit.getString("RSA", "None");
-        /*
-        boolean logs = edit.getBoolean("logs",false);//upload once
-        if(!logs) {
-            LogcatHelper.getInstance(mContext).start();
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "error : ", e);
-            }
-            //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxxxxx");
-            LogcatHelper.getInstance(mContext).stop();
-            SharedPreferences.Editor editor = edit.edit();
-            editor.putBoolean("logs",true);//record
-            editor.apply();
-        }
-        */
         if(!name.equals("None")) {
             Log.i("uploading", "upload logs start");
             //上传文件
@@ -213,8 +198,8 @@ public class TimerManager {
     }
 
     void uploadFile() {
-        SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
-        name = edit.getString("RSA", "None");
+        //SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
+        //name = edit.getString("RSA", "None");
         if(!name.equals("None")) {
             Log.i("uploading", "upload start");
             //上传文件
@@ -245,6 +230,12 @@ public class TimerManager {
         return null;
     }
 
+    String uploadTimeCheck(long tm){
+        if(name!="None"&&getwifistate()!=0&&tm>=0)
+            return SocketHttpRequester.uploadRunningTime(requestUrl+"timecheck/"+adler+"/"+tm);
+        return null;
+    }
+
     File[] getfilelist(){
         final File filedir = mContext.getFilesDir();
         if (!filedir.exists()) {//判断路径是否存在
@@ -252,9 +243,25 @@ public class TimerManager {
         }
         //Compress
         //Log.d("uploading", filedir.getName());
-        final File[] files = filedir.listFiles();
-        return files;
+        return filedir.listFiles();
     }
+
+    public void showToast(final String text) {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                Looper.prepare();
+                try {
+                    Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e("error", e.toString());
+                }
+                Looper.loop();
+            }
+        }.start();
+    }
+
 }
 
 

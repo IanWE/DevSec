@@ -158,12 +158,12 @@ class JobInsertRunnable implements Runnable {
         db.endTransaction();
         db.close();
         long deltaTime = System.currentTimeMillis() - startTime;
-        boolean ifcompress = Utils.checkfile(context);
         groundTruthValues = new ArrayList<>();
         userFeedbacks = new ArrayList<>();
         compilerValues = new ArrayList<>();
         frontAppValues = new ArrayList<>();
         insert_locker.unlock();
+        boolean ifcompress = Utils.checkfile(context);//get the size of db
         if(ifcompress) {//if the db is large than limit size, compress it.
             Utils.compress(context);
         }
