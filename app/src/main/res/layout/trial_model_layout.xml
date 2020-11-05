@@ -40,7 +40,7 @@
         android:layout_marginRight="90dp"
         android:background="@drawable/button_shape"
         android:layout_below="@+id/start"
-        android:text="Close"
+        android:text="Finish"
         android:textAllCaps="false"
         android:textColor="#ddd"
         android:textSize="18sp" />

@@ -76,7 +76,7 @@ public class CacheScan {
     private int Length = 4;
     static long notification = 0;
     static long answered = 0;
-    //static volatile int semaphore=1;
+    static boolean notifying = false;//
     boolean filtered = false;
     static ArrayList<String> target_functions = new ArrayList<String>();
     final HashMap<String, String> behaviour_map = new HashMap<String, String>();
@@ -404,7 +404,7 @@ public class CacheScan {
         //insert the logs into dataset
         long[] times = GetTimes();
         int[] logs;
-        if (times != null) {
+        if (times != null&&times.length>0) {
             int[] thresholds = GetThresholds();
             logs = GetLogs();
             ArrayList<CompilerValue> cvs = new ArrayList<CompilerValue>();
@@ -433,8 +433,7 @@ public class CacheScan {
         }
         else {
             sameapp = 1;
-        }
-        //Log.d(TAG,!app.equals("None")+"  "+!app.toUpperCase().contains("LAUNCHER")+"  "+!app.equals(preapp));
+        }//Log.d(TAG,!app.equals("None")+"  "+!app.toUpperCase().contains("LAUNCHER")+"  "+!app.equals(preapp));
         //if there is an app change, dismiss the first one.
         if(!app.equals("None")&&!app.toUpperCase().contains("LAUNCHER")&&!app.equals(preapp)){
             dismiss = true;
@@ -471,7 +470,7 @@ public class CacheScan {
         Log.d(TAG, AppStringforcheck + " >>> "+permission_type+" >>>"
                 + flags[0] + ":" + flags[1] + ":" + flags[2] + ":" + flags[3] + "."
                 + "notification:" + notification +" Sameapp:"+sameapp);
-        if (flags != null&&Utils.sum(flags)!=0) {//if some function are activated
+        if (Utils.sum(flags) != 0) {//if some function are activated
             //检查一次, 地址是否都被成功解析
             if (!ischeckedaddr) {
                 int[] addrs = addr();//get the addresses
@@ -485,6 +484,7 @@ public class CacheScan {
             for (int i = 0; i < Length; i++) {//0-3  5 6
                 String cur = target_functions.get(i);
                 if (flags[i] != 0){
+                    int cmp = 0;
                     if(i==1||i==2){
                         if(sameapp<count){
                             Log.d(TAG,"It is the first activation, skip");
@@ -500,7 +500,6 @@ public class CacheScan {
                             ClearPattern(3);
                             continue;
                         }
-                        int cmp;
                         double thforcamera = camera_threshold_level;
                         double thforaudio = audio_threshold_level;
                         //cmp = Utils.pattern_compare(ALpattern.get(i - 1), pattern);
@@ -508,7 +507,7 @@ public class CacheScan {
                         if(cmp<=(int)(thresholdforpattern[i-1]*thforcamera)){
                             cleanpattern[i-1]++;
                             HandleCapture(i);
-                            if(cleanpattern[i-1]>5){//accumulating
+                            if(cleanpattern[i-1]>3){//accumulating
                                 cleanpattern[i-1] = 0;
                                 ClearPattern(i);
                                 Log.d(TAG,"pattern-"+i+" clear : "+cmp);
@@ -534,7 +533,7 @@ public class CacheScan {
                             int[] patternX = GetPattern(1);
                             //int sumcpattern = Utils.pattern_compare(ALpattern.get(0), patternX);
                             int sumcpattern = Utils.sum(patternX);
-                            if (sumcpattern >(int)(thresholdforpattern[0] * (thforcamera))) {
+                            if (sumcpattern!=0&&sumcpattern >=(int)(thresholdforpattern[0] * (thforcamera))) {
                                 HandleCapture(i);
                                 Log.d(TAG, "Camera pattern is " + sumcpattern + ". Skip audio event.");
                                 i = 1;
@@ -560,7 +559,6 @@ public class CacheScan {
                     insert_locker.lock();
                     groundTruthValues.add(groundTruthValue);
                     insert_locker.unlock();
-
                     if (i==2) {
                         lastaudio = time;
                         if (lastaudio - lastcamera < 2500||(pkg_permission.get(app)&i)!=i) {//if the camera follow audio tightly
@@ -591,15 +589,15 @@ public class CacheScan {
                         locker.unlock();
                         //add a user feedback
                         Intent intent = new Intent(mContext, NotificationClickReceiver.class);
-                        intentBuild(intent, time, app, i, 0);
+                        intentBuild(intent, time, app, i, 0, cmp);
                         PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, i + 5, intent, FLAG_UPDATE_CURRENT);
 
                         Intent intenty = new Intent(mContext, NotificationClickReceiver.class);
-                        intentBuild(intenty, time, app, i, 1);
+                        intentBuild(intenty, time, app, i, 1,cmp);
                         PendingIntent pendingIntenty = PendingIntent.getBroadcast(mContext, i + 10, intenty, FLAG_UPDATE_CURRENT);
 
                         Intent intentn = new Intent(mContext, NotificationClickReceiver.class);
-                        intentBuild(intentn, time, app, i, 2);
+                        intentBuild(intentn, time, app, i, 2,cmp);
                         PendingIntent pendingIntentn = PendingIntent.getBroadcast(mContext, i + 15, intentn, FLAG_UPDATE_CURRENT);
                         //send notification
                         String textContent = Utils.getDateToString("yyyy-MM-dd HH:mm:ss") + " " + app + " used " + BehaviorList[i];
@@ -636,11 +634,12 @@ public class CacheScan {
         }
     }
 
-    private void intentBuild(Intent intent,long time,String app,int flag,int ignored){
+    private void intentBuild(Intent intent,long time,String app,int flag,int ignored,int cmp){
         intent.putExtra("arise",time);
         intent.putExtra("app",app);
         intent.putExtra("flag",flag);
         intent.putExtra("ignored",ignored);
+        intent.putExtra("pattern",cmp);
     }
 
     private void ResetThreshold() {
@@ -705,7 +704,7 @@ public class CacheScan {
     public static native void increase();
     public static native void decrease();
     public static native void setthreshold(int new_thresh);
-    public static native void filteraddr(int index);
+    //public static native void filteraddr(int index);
     public static native void init(String[] dexlist,String[] filename,String[] func_list);
     public static native int[] GetPattern(int c);
     public static native int[] ClearPattern(int c);

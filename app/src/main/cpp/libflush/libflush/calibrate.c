@@ -10,7 +10,6 @@
 
 #define MIN(a, b) ((a) > (b)) ? (b) : (a)
 
-#define TAG_NAME "ARMAGEDDON"
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)
 int calibrate(libflush_session_t* libflush_session)
 {

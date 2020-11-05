@@ -36,7 +36,6 @@ public class TimerManager {
     /**
      * @param args
      */
-    Context mContext;
     private static TimerManager INSTANCE = null;
     private final String DATABASE_PATH = "/data/data/com.SMU.DevSec/databases/";
     private final String DATABASE_FILENAME = "SideScan.db";
@@ -50,23 +49,19 @@ public class TimerManager {
 
     //时间间隔(一天)
     private static final long PERIOD_DAY = 24 * 60 * 60 * 1000;
-    private TimerManager(Context context){
-        init(context);
+    private TimerManager(){
+        //do something
     }
     /**
      * 初始化目录
      */
-    private void init(Context context) {
-        mContext = context;
-    }
-
-    public static TimerManager getInstance(Context context){
+    public static TimerManager getInstance(){
         if(INSTANCE==null)
-            INSTANCE = new TimerManager(context);
+            INSTANCE = new TimerManager();
         return INSTANCE;
     }
 
-    public void schedule() {
+    public void schedule(final Context mContext) {
         if(scheduled1)
            return;
         scheduled1 = true;
@@ -89,15 +84,15 @@ public class TimerManager {
                 //final File file = new File(DATABASE_PATH + DATABASE_FILENAME);
                 //Log.d("uploading", file.getName());
                 Utils.compress(mContext);
-                if (getwifistate() == 2) {
-                    uploadFile();
+                if (getwifistate(mContext) == 2) {
+                    uploadFile(mContext);
                 } else
                     Log.i("uploading", "No WIFI connected");
             }
         }, date, PERIOD_DAY);
     }
 
-    public void schedule_upload() {
+    public void schedule_upload(final Context mContext) {
         if(scheduled)
             return;
         scheduled = true;
@@ -120,14 +115,14 @@ public class TimerManager {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (getwifistate() == 2) {
-                    uploadFile();
-                    uploadLogs();
+                if (getwifistate(mContext) == 2) {
+                    uploadFile(mContext);
+                    uploadLogs(mContext);
                 } else {
                     Log.i("uploading", "No WIFI connected");
                     //if there are more than 30 files, stop service;
                 }
-                File[] files = getfilelist();
+                File[] files = getfilelist(mContext);
                 if(files.length>=100&&SideChannelJob.continueRun){
                     Intent stop=new Intent (mContext,SideChannelJob.class);
                     if(!check) {
@@ -141,7 +136,7 @@ public class TimerManager {
                             mSwitch.setChecked(false);
                         }
                     });
-                    showToast("You have more than 100 files need to be uploaded");
+                    showToast(mContext,"You have more than 100 files need to be uploaded");
                     MainActivity.checkRunStatus(SideChannelJob.continueRun);
                     Log.d(TAG, "Job cancelled");
                 }
@@ -157,7 +152,7 @@ public class TimerManager {
         return startDT.getTime();
     }
 
-    private int getwifistate() {
+    private int getwifistate(Context mContext) {
         int result = 0; // Returns connection type. 0: none; 1: mobile data; 2: wifi
         ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
@@ -173,7 +168,7 @@ public class TimerManager {
         return result;
     }
 
-    void uploadLogs() {
+    void uploadLogs(Context mContext) {
         if(!name.equals("None")) {
             Log.i("uploading", "upload logs start");
             //上传文件
@@ -182,7 +177,7 @@ public class TimerManager {
                 Log.d(TAG,"File not exists");
                 return;
             }
-            if (getwifistate() != 0) {
+            if (getwifistate(mContext) != 0) {
                 if (file.getName().endsWith("txt") && SocketHttpRequester.uploadFile(file, requestUrl, name).equals("Success")) {
                     //reinitializeDB();
                     file.delete();
@@ -197,17 +192,17 @@ public class TimerManager {
         }
     }
 
-    void uploadFile() {
+    void uploadFile(Context mContext) {
         //SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
         //name = edit.getString("RSA", "None");
         if(!name.equals("None")) {
             Log.i("uploading", "upload start");
             //上传文件
-            File[] files = getfilelist();
+            File[] files = getfilelist(mContext);
             if (files == null) {
                 return;
             }
-            if (getwifistate() == 2) {
+            if (getwifistate(mContext) == 2) {
                 for (File file : files) {
                     if (file.getName().endsWith("gz") && SocketHttpRequester.uploadFile(file, requestUrl, name).equals("Success")) {
                         //reinitializeDB();
@@ -224,19 +219,19 @@ public class TimerManager {
         }
     }
 
-    String getCode(String name){
-        if(getwifistate()!=0)
+    String getCode(Context mContext,String name){
+        if(getwifistate(mContext)!=0)
             return SocketHttpRequester.getCode(requestUrl,name);
         return null;
     }
 
-    String uploadTimeCheck(long tm){
-        if(name!="None"&&getwifistate()!=0&&tm>=0)
+    String uploadTimeCheck(Context mContext,long tm){
+        if(name!="None"&&getwifistate(mContext)!=0&&tm>=0)
             return SocketHttpRequester.uploadRunningTime(requestUrl+"timecheck/"+adler+"/"+tm);
         return null;
     }
 
-    File[] getfilelist(){
+    File[] getfilelist(Context mContext){
         final File filedir = mContext.getFilesDir();
         if (!filedir.exists()) {//判断路径是否存在
             return null;
@@ -246,7 +241,7 @@ public class TimerManager {
         return filedir.listFiles();
     }
 
-    public void showToast(final String text) {
+    public void showToast(final Context mContext, final String text) {
         new Thread() {
             @Override
             public void run() {

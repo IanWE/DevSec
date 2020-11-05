@@ -5,8 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.widget.TextView;
 
-import org.pytorch.IValue;
-import org.pytorch.Tensor;
+//import org.pytorch.IValue;
+//import org.pytorch.Tensor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +60,7 @@ class Classifier implements Runnable {
             if(i % 60!=0) X[i] = X[i]-X[i-1];
             else X[i]=(float) 0;
         }
-        final int result = Infer(X);
+        //final int result = Infer(X);
         /*
         if(result>0) {
             status[result].post(new Runnable() {
@@ -92,10 +92,10 @@ class Classifier implements Runnable {
             });
         }
          */
-        Log.d(TAG,CLASSES[result]);
+        //Log.d(TAG,CLASSES[result]);
 
     }
-
+/*
     public int Infer(float[] X) {
         Tensor inputTensor = Tensor.fromBlob(X,shape);
         // running the model
@@ -113,6 +113,7 @@ class Classifier implements Runnable {
             }
         }
         return maxScoreIdx;
-
     }
+
+ */
 }

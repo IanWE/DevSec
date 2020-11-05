@@ -13,6 +13,7 @@ import static com.SMU.DevSec.CacheScan.answered;
 import static com.SMU.DevSec.CacheScan.handled;
 import static com.SMU.DevSec.CacheScan.lastactivetime;
 import static com.SMU.DevSec.CacheScan.mContext;
+import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.SideChannelJob.locker;
 import static com.SMU.DevSec.SideChannelJob.userFeedbacks;
 
@@ -26,6 +27,7 @@ public class NotificationClickReceiver extends BroadcastReceiver {
         int event = data.getInt("flag");
         String app = data.getString("app");
         int ignored = data.getInt("ignored");
+        int cmp = data.getInt("pattern");
 
         locker.lock();
         handled[event] = true;
@@ -41,29 +43,30 @@ public class NotificationClickReceiver extends BroadcastReceiver {
         userFeedback.setEvent(event);
         userFeedback.setApp(app);
         userFeedback.setAnsweringtime(Utils.getCurTimeLong());
+        userFeedback.setPattern(cmp);
         switch (ignored){
             case 0:
                 Log.d(TAG,"Not sure");
                 userFeedback.setChoice(0);//means you know the event
-                locker.lock();
+                insert_locker.lock();
                 userFeedbacks.add(userFeedback);
-                locker.unlock();
+                insert_locker.unlock();
                 answered++;
                 break;
             case 1:
                 Log.d(TAG,"Confirmed");
                 userFeedback.setChoice(1);//means you know the event
-                locker.lock();
+                insert_locker.lock();
                 userFeedbacks.add(userFeedback);
-                locker.unlock();
+                insert_locker.unlock();
                 answered++;
                 break;
             case 2:
                 Log.d(TAG,"Cannot Confirm");
                 userFeedback.setChoice(2);//means you know the event
-                locker.lock();
+                insert_locker.lock();
                 userFeedbacks.add(userFeedback);
-                locker.unlock();
+                insert_locker.unlock();
                 answered++;
                 break;//sms
         }

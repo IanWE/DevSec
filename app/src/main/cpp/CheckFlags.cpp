@@ -14,16 +14,16 @@ extern jint* filter;
 extern int t[];
 
 extern int* flags;
-extern size_t* addr;
+extern size_t *addr;
 extern int compiler_position;
 extern int sum_length;
 extern pthread_mutex_t g_lock;
 extern uint64_t threshold;
 //for compiler
 extern int log_length;
-extern int logs[300000];
-extern long times[300000];
-extern int thresholds[300000];
+extern int logs[100000];
+extern long times[100000];
+extern int thresholds[100000];//the extern definition have to be the same with the original
 extern int pausescan;
 
 extern int length_of_camera_audio[2];
@@ -101,23 +101,26 @@ Java_com_SMU_DevSec_CacheScan_ClearPattern(JNIEnv *env, jobject thiz,jint c){
     pthread_mutex_unlock(&g_lock);
 }
 
+
 extern "C" JNIEXPORT jintArray JNICALL
 Java_com_SMU_DevSec_CacheScan_addr(JNIEnv *env, jobject thiz){
-    jintArray ja = env->NewIntArray(sum_length);
+    jintArray ja = env->NewIntArray(compiler_position);
     jint *arr = env->GetIntArrayElements(ja, NULL);
     if(addr!=NULL) {
-        memcpy(arr,addr,sizeof(int)*sum_length);
+        memcpy(arr,addr,sizeof(size_t)*compiler_position);
         env->ReleaseIntArrayElements(ja, arr, 0);
         return ja;
     }
     return NULL;
 }
 
+
 //functions to get logs and times
 extern "C" JNIEXPORT jlongArray JNICALL
 Java_com_SMU_DevSec_CacheScan_GetTimes(JNIEnv *env, jobject thiz){
     length = log_length;
-    if(length!=0) {
+    //LOGD("xxxxxxxxxxxxxxxxxxxxxxx Loglength %d",length);
+    if(length-1>0) {
         jlongArray ja = env->NewLongArray(length);
         jlong *arr = env->GetLongArrayElements(ja, NULL);
         memcpy(arr,times,sizeof(long)*length);
@@ -194,12 +197,14 @@ Java_com_SMU_DevSec_CacheScan_getthreshold(JNIEnv *env, jobject thiz){
     return threshold;
 }
 
+/*
 extern "C" JNIEXPORT void JNICALL
 Java_com_SMU_DevSec_CacheScan_filteraddr(JNIEnv *env, jobject thiz, jint index){
     pthread_mutex_lock(&g_lock);
     addr[index] = 0;
     pthread_mutex_unlock(&g_lock);
 }
+ */
 
 extern "C"
 JNIEXPORT jintArray JNICALL
@@ -214,11 +219,13 @@ Java_com_SMU_DevSec_TrialModelStages_getFilter(JNIEnv *env, jclass clazz) {
     return ja;
 }
 
+/*
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_SMU_DevSec_TrialModelStages_flush(JNIEnv *env, jclass clazz,jint c) {
-    flush_address((size_t*)addr[c],length_of_camera_audio[c-1]);
+    flush_address(c,length_of_camera_audio[c-1]);
 }
+ */
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_SMU_DevSec_MainActivity_isrunning(JNIEnv *env, jobject thiz){

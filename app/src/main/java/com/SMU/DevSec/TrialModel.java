@@ -1,27 +1,15 @@
 package com.SMU.DevSec;
 
-import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
-import android.os.PersistableBundle;
-import android.text.SpannableStringBuilder;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import static com.SMU.DevSec.MainActivity.pkg_permission;
 import static com.SMU.DevSec.SideChannelJob.continueRun;
 import static com.SMU.DevSec.MainActivity.stage;
 
@@ -35,15 +23,22 @@ public class TrialModel extends AppCompatActivity {
         setContentView(R.layout.trial_model_layout);
         LogcatHelper.getInstance(getBaseContext()).start();
         Button start_button = findViewById(R.id.start);
-        //final TrialModelStages tms = new TrialModelStages(TrialModel.this);
+        stage = 1;//start the service
+        final TrialModelStages tms = new TrialModelStages(TrialModel.this);
+        //final TrialModelStages_backup tms = new TrialModelStages_backup(TrialModel.this);
         start_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (CacheScan.CacheCheck() == null) {//check if initiated well.
-                    showToast("App is initializing, try it a bit later");
+                    showToast("App is initializing, try few seconds later");
+                }
+                else if(stage==1){
+                    tms.startDialog();
                 }
                 else {
-                    TrialModelStages.getInstance(TrialModel.this).startDialog();
+                    showToast("You have completed the test");
+                    Intent intent = new Intent(getBaseContext(), AfterTrialModel.class);
+                    startActivity(intent);
                 }
             }
         });
@@ -52,14 +47,21 @@ public class TrialModel extends AppCompatActivity {
         close_button.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                Intent stop=new Intent (getBaseContext(),SideChannelJob.class);
-                stopService(stop);
-                finishAffinity();
-                System.exit(0);
+                if(stage==0) {
+                    Intent intent = new Intent(getBaseContext(), AfterTrialModel.class);
+                    startActivity(intent);
+                }
+                else{
+                    Log.d(TAG,"You haven't finished the test.");
+                    showToast("You haven't finished the test.");
+                }
+                //Intent stop=new Intent (getBaseContext(),SideChannelJob.class);
+                //stopService(stop);
+                //finishAffinity();
+                //System.exit(0);
             }
         });
 
-        stage = 1;//start the service
         Intent begin = new Intent(this, SideChannelJob.class);
         if (!continueRun) {
             continueRun = true;
@@ -88,7 +90,7 @@ public class TrialModel extends AppCompatActivity {
 
     public void onDestroy() {
         //finishAffinity();
-        //if(TrialModelStages.getInstance(TrialModel.this) != null) {   mDialog.dismiss();  }
+        //if(TrialModelStages_backup.getInstance(TrialModel.this) != null) {   mDialog.dismiss();  }
         super.onDestroy();
     }
 }

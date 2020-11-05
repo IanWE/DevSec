@@ -48,6 +48,7 @@ public class Utils {
     private final String FILE_PATH = "/data/data/com.SMU.DevSec/files/";
     public static final String DATABASE_FILENAME = "SideScan.db";
     public static final String TEMP_DATABASE = "TempDatabase.db";
+    public static boolean compressing=false;
     /**
      * 获取指定文件或指定文件夹的的指定单位的大小
      * @param filePath 文件路径
@@ -253,6 +254,9 @@ public class Utils {
     }
 
     public static void compress(Context mContext){
+        if(compressing)
+            return;
+        compressing = true;
         isCollected = true;
         File database = mContext.getDatabasePath(TEMP_DATABASE);
         String compressed_filename = getCurTimeLong()/1000+".gz";
@@ -264,6 +268,7 @@ public class Utils {
             e.printStackTrace();
         }
         database.delete();
+        compressing = false;
     }
 
     private static void reinitializeDB(Context mContext) {

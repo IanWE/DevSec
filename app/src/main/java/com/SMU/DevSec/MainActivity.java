@@ -49,7 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-import org.pytorch.Module;
+//import org.pytorch.Module;
 
 
 //public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
     CrashHandler crashHandler = CrashHandler.getInstance();
     private static final int ready = 0;
     public static String previous_name = "";
-    static Module module = null;
+    //static Module module = null;
     static boolean infering = true;
     static int camera = 0;
     static int audio = 0;
@@ -135,12 +135,13 @@ public class MainActivity extends AppCompatActivity {
         getAllAppInfos();
         DATABASE_PATH =  getBaseContext().getFilesDir().getPath()+"databases/";
         // Loading model
+        /*
         try {
             module = Module.load(assetFilePath(this, "model.pt"));
         } catch (IOException e) {
             Log.e("Pytorch", "Error reading assets", e);
         }
-
+        */
         //Switch
         mSwitch = (Switch) findViewById(R.id.btn_schedule_job);
         jobStatus = (EditText) findViewById(R.id.job_status);
@@ -148,9 +149,11 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences edit = getSharedPreferences("user", 0);
         final String name = edit.getString("RSA", "None");
         trial = edit.getString("trialmodel", "0");//
+        lastday = edit.getLong("lastday",0);
+        day = edit.getLong("day",1);
         //trial = "1";
         //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxx"+trial);
-        if(check){
+        if(check){//every time enter the app, check the running status.
             if(!SideChannelJob.continueRun) {
                 mSwitch.setChecked(false);
                 checkRunStatus(SideChannelJob.continueRun);
@@ -183,9 +186,8 @@ public class MainActivity extends AppCompatActivity {
                         intent = new Intent(MainActivity.this, Register.class);
                         startActivity(intent);//start register page
                         mSwitch.setChecked(false);
-                    } else {
+                    } else
                         scheduleJob(buttonView);
-                    }
                 } else {
                     boolean d = cancelJob(buttonView);
                     if(!d){
@@ -233,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         //start
 
         if(trial.equals("1")) {
-            TimerManager.getInstance(getBaseContext()).schedule_upload();
+            TimerManager.getInstance().schedule_upload(getBaseContext());
             //TimerManager.getInstance(getBaseContext()).schedule();
             mSwitch.setChecked(true);
         }
@@ -261,8 +263,9 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }
         if(granted&&!name.equals("None")&&trial.equals("1")) {
-            TimerManager.getInstance(getBaseContext()).schedule_upload();
-            mSwitch.setChecked(true);
+            if(!SideChannelJob.continueRun)
+                TimerManager.getInstance().schedule_upload(getBaseContext());
+                mSwitch.setChecked(true);
         }
     }
 
@@ -291,49 +294,48 @@ public class MainActivity extends AppCompatActivity {
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.notification_channel_name);
-            String description = "Notification for captured behaviours";
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel("behaviour capture", name, importance);
-            channel.setDescription(description);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
+        CharSequence name = getString(R.string.notification_channel_name);
+        String description = "Notification for captured behaviours";
+        int importance = NotificationManager.IMPORTANCE_HIGH;
+        NotificationChannel channel = new NotificationChannel("behaviour capture", name, importance);
+        channel.setDescription(description);
+        // Register the channel with the system; you can't change the importance
+        // or other notification behaviors after this
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
     }
 
     private String[] exec(String target) {
-        String data = "";
+        StringBuilder data = new StringBuilder();
         try {
             java.lang.Process p = null;
-            String command = target; //还没进内存
             //Log.d(TAG,"TTTTTTTTTTTT"+command);
-            p = Runtime.getRuntime().exec(command);
+            p = Runtime.getRuntime().exec(target);
             BufferedReader ie = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String error = null;
             while ((error = ie.readLine()) != null
                     && !error.equals("null")) {
-                data += error + "\n";
+                data.append(error).append("\n");
             }
             String line = null;
             while ((line = in.readLine()) != null
                     && !line.equals("null")) {
-                data += line + "\n";
+                data.append(line).append("\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Log.d(TAG,data);
-        return data.split(" ");
+        Log.d(TAG, data.toString());
+        return data.toString().split(" ");
     }
     /*
      * 得到手机中所有应用信息的列表
      * AppInfo
      */
     protected void getAllAppInfos() {
+        if(pkg_permission!=null&&!pkg_permission.isEmpty())
+            return;
         //List<AppInfo> list = new ArrayList<AppInfo>();
         // 得到应用的packgeManager
         final PackageManager packageManager = getPackageManager();
@@ -420,23 +422,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void scheduleJob(View v) {
         SideChannelJob.continueRun = true;
-        SharedPreferences edit = getSharedPreferences("user",0);
-        lastday = edit.getLong("lastday",0);
-        day = edit.getLong("day",1);
         checkRunStatus(SideChannelJob.continueRun);
         // Building the job to be passed to the job scheduler
         Intent begin = new Intent(this, SideChannelJob.class);
-        if (Build.VERSION.SDK_INT >= 26) {
-            startForegroundService(begin);
-            Log.d(TAG, "Job scheduled");
-            Toast.makeText(this, "Job is scheduling", Toast.LENGTH_SHORT)
-                    .show();
-        }
-        else{
-            Log.d(TAG, "Job scheduling failed");
-            Toast.makeText(this, "Job scheduling failed", Toast.LENGTH_SHORT)
-                    .show();
-        }
+        startForegroundService(begin);
+        Log.d(TAG, "Job scheduled");
+        Toast.makeText(this, "Job is scheduling", Toast.LENGTH_SHORT)
+                .show();
     }
 
     /**
@@ -446,12 +438,13 @@ public class MainActivity extends AppCompatActivity {
      */
     public boolean cancelJob(View v) {
         Intent stop=new Intent (this,SideChannelJob.class);
-        if(!check&&isrunning()==0) {
+        if(!check) {
             Toast.makeText(this, "Please try it later.", Toast.LENGTH_SHORT)
                     .show();
             return false;
         }
         stopService(stop);
+        SideChannelJob.continueRun = false;
         checkRunStatus(SideChannelJob.continueRun);
         Log.d(TAG, "Job cancelled");
         return true;
@@ -498,7 +491,8 @@ public class MainActivity extends AppCompatActivity {
                 SideChannelContract.Columns.EVENT + " INTEGER, "+
                 SideChannelContract.Columns.CURRENT_APP + " INTEGER, "+
                 SideChannelContract.Columns.ANSWERINGTIME + " INTEGER, "+
-                SideChannelContract.Columns.CHOICES + " INTEGER); ";
+                SideChannelContract.Columns.CHOICES + " INTEGER, "+
+                SideChannelContract.Columns.PATTERN + " INTEGER); ";
         db.execSQL(sSQL);
 
         sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.SIDE_COMPILER+ " (" +

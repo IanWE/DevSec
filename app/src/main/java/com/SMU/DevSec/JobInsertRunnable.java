@@ -60,8 +60,8 @@ class JobInsertRunnable implements Runnable {
         db = context.openOrCreateDatabase("SideScan.db", Context.MODE_PRIVATE, null);
         // DB transaction for faster batch insertion of data into database
         db.beginTransaction();
-        values = new ContentValues();
         if(sideChannelValues!=null&&sideChannelValues.size()!=0) {
+            values = new ContentValues();
             for (SideChannelValue sideChannelValue : sideChannelValues) {
                 values.put(SideChannelContract.Columns.SYSTEM_TIME,
                         sideChannelValue.getSystemTime());
@@ -101,6 +101,7 @@ class JobInsertRunnable implements Runnable {
                         sideChannelValue.getTotalRxPackets());
                 db.insert(SideChannelContract.TABLE_NAME, null, values);
             }
+            sideChannelValues = new ArrayList<>();
         }
         // Ground Truth insertion
         if(groundTruthValues!=null&&groundTruthValues.size()!=0) {
@@ -112,7 +113,9 @@ class JobInsertRunnable implements Runnable {
                         groundTruthValue.getLabels());
                 db.insert(SideChannelContract.GROUND_TRUTH, null, values);
             }
+            groundTruthValues = new ArrayList<>();
         }
+
         if(userFeedbacks!=null&&userFeedbacks.size()!=0) {
             values = new ContentValues();
             for (UserFeedback userFeedback : userFeedbacks) {
@@ -126,9 +129,13 @@ class JobInsertRunnable implements Runnable {
                         userFeedback.getAnsweringtime());
                 values.put(SideChannelContract.Columns.CHOICES,
                         userFeedback.getChoice());
+                values.put(SideChannelContract.Columns.PATTERN,
+                        userFeedback.getPattern());
                 db.insert(SideChannelContract.USER_FEEDBACK, null, values);
             }
+            userFeedbacks = new ArrayList<>();
         }
+
         if(compilerValues!=null&&compilerValues.size()!=0) {
             values = new ContentValues();
             for (CompilerValue compilerValue: compilerValues) {
@@ -142,7 +149,9 @@ class JobInsertRunnable implements Runnable {
                 //        compilerValue.getFunctions());
                 db.insert(SideChannelContract.SIDE_COMPILER, null, values);
             }
+            compilerValues = new ArrayList<>();
         }
+
         if(frontAppValues!=null&&frontAppValues.size()!=0) {
             values = new ContentValues();
             for (FrontAppValue frontAppValue: frontAppValues) {
@@ -152,16 +161,12 @@ class JobInsertRunnable implements Runnable {
                         frontAppValue.getCurrentApp());
                 db.insert(SideChannelContract.FRONT_APP, null, values);
             }
+            frontAppValues = new ArrayList<>();
         }
         db.setTransactionSuccessful();
         db.endTransaction();
         db.close();
         long deltaTime = System.currentTimeMillis() - startTime;
-        groundTruthValues = new ArrayList<>();
-        userFeedbacks = new ArrayList<>();
-        compilerValues = new ArrayList<>();
-        frontAppValues = new ArrayList<>();
-        sideChannelValues = new ArrayList<>();
         insert_locker.unlock();
         boolean ifcompress = Utils.checkfile(context);//get the size of db
         if(ifcompress) {//if the db is large than limit size, compress it.

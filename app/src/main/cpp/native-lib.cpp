@@ -15,20 +15,12 @@ int finishtrial1 = 0;
 jint* filter;
 int t[] = {0,0};
 
-int pausescan = 0;
+int firstrun = 1;
 int continueRun = 0;
 int threshold = 0;
 int *flags;
 int sum_length = 0;
-size_t* addr= NULL;
-
-int compiler_position = 5;
-int log_length = 0;
-int logs[300000] = {0};
-long times[300000] = {0};
-int thresholds[300000] = {0};
-int length_of_camera_audio[2] = {0,0};
-pthread_mutex_t g_lock;
+size_t *addr = nullptr;
 
 int running = 0;
 int* camera_pattern;
@@ -36,13 +28,27 @@ int* audio_pattern;
 int camera_audio[] = {1,2};//indexes of camera list and audio list
 std::vector<std::string> camera_list;
 std::vector<std::string> audio_list;
+size_t *mfiles;
 
-extern "C" JNIEXPORT jstring JNICALL
+int compiler_position = 5;
+int log_length = 0;
+int logs[100000] = {0};
+long times[100000] = {0};
+int thresholds[100000] = {0};
+int length_of_camera_audio[2] = {0,0};
+pthread_mutex_t g_lock;
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_SMU_DevSec_SideChannelJob_scan(
         JNIEnv *env,
         jobject thiz,jintArray ptfilter) {
-    int* arrp = env->GetIntArrayElements(ptfilter,0);
     continueRun = 1;
+    if(firstrun!=1) {//since if I run this function repeatetively, the app tend to crash, So I only pause the thread.
+        LOGD("Restart scanning.");
+        return;
+    }
+    firstrun = 0;
+    int* arrp = env->GetIntArrayElements(ptfilter,0);
     for(int i=0;i<length_of_camera_audio[0];i++)//camera
     {
         if (arrp[i] == 1) {
@@ -82,12 +88,12 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
             t[1] = t1;
         }
     }
-    hit(&g_lock, compiler_position, &continueRun,
-        threshold, flags, times, thresholds, logs, log_length, sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr, &running);
-    running = 0;
+    hit(&g_lock,  compiler_position, &continueRun,
+        threshold, flags, times, thresholds, logs, &log_length, sum_length,
+        addr,camera_pattern, audio_pattern, length_of_camera_audio);
+    //running = 0;
     LOGD("Finished scanning %d",running);
-    return env->NewStringUTF("");
+    return;
 }
 
 template <typename T>
@@ -104,7 +110,6 @@ Java_com_SMU_DevSec_TrialModelStages_trial1(
         JNIEnv *env, jobject thiz) {
     LOGD("Start trial 1.\n");
     int length_alive_function = length_of_camera_audio[0]+length_of_camera_audio[1];
-    //
     stage1_(filter, threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1,sum_length); //eliminate all poping functions.
     LOGD("Finish TrialMode 1");
     return;
@@ -115,9 +120,9 @@ Java_com_SMU_DevSec_SideChannelJob_trial2(
         JNIEnv *env, jobject thiz) {
     LOGD("Start trial 2.\n");
     continueRun = 1;
-    hit(&g_lock, compiler_position, &continueRun,
-        threshold, flags, times, thresholds, logs, log_length, sum_length,
-        camera_pattern, audio_pattern, length_of_camera_audio, addr, nullptr);
+    hit(&g_lock,  compiler_position, &continueRun,
+        threshold, flags, times, thresholds, logs, &log_length, sum_length,
+        addr, camera_pattern, audio_pattern, length_of_camera_audio);
     LOGD("Finish TrialMode 2");
 }
 
@@ -143,6 +148,7 @@ Java_com_SMU_DevSec_CacheScan_init(
     jsize size = env->GetArrayLength(dexlist);
     char** func_list; //functions' offsets of every library;
     //get address list
+    mfiles = static_cast<size_t *>(malloc(sizeof(size_t *) * size));
     for(int i=0;i<size;i++)
     {
         jstring obj = (jstring)env->GetObjectArrayElement(dexlist,i);
@@ -156,7 +162,7 @@ Java_com_SMU_DevSec_CacheScan_init(
         //expand addr[];
         sum_length = sum_length + length;
         addr = static_cast<size_t *>(realloc(addr,sum_length*sizeof(size_t)));
-        ReadOffset(env,dex,addr,func_list,length,filename,camera_list,audio_list);
+        mfiles[i] = ReadOffset(env, dex, addr, func_list, length, filename, camera_list, audio_list);
     }
     LOGD("Functions Length %d",sum_length);
     LOGD("Camera List: %d, Audio List: %d",length_of_camera_audio[0],length_of_camera_audio[1]);
@@ -182,22 +188,7 @@ Java_com_SMU_DevSec_CacheScan_init(
         }
         swap(((size_t*)addr[1]+i),((size_t*)addr[1]+t));
         swap(camera_list[i],camera_list[t]);
-    }
-    srand(1);
-    for(int i=0;i<length_of_camera_audio[1];i++){
-        int t = rand()%length_of_camera_audio[1];
-        if(!address_check(audio_list[i])){
-            *((size_t*)addr[2]+i) = 0;
-        }
-        if(!address_check(audio_list[i])){
-            *((size_t*)addr[2]+t) = 0;
-        }
-        //LOGD("KKKKKKKKKKKKKKKKK %s",audio_list[i].c_str());
-        swap(((size_t*)addr[2]+i),((size_t*)addr[2]+t));
-        swap(audio_list[i],audio_list[t]);
-    }
-     */
-    //LOGD("xxxxxxxxxxxxxxxxxxxxxxxxxxx ");
+    }*/
     std::string temp="";
     int found = 0;
     for(int i=0;i<length_of_camera_audio[0];i++) {
@@ -220,7 +211,7 @@ Java_com_SMU_DevSec_CacheScan_init(
     }
     found = 0;
     for(int i=0;i<length_of_camera_audio[1];i++){
-        if (i == 1120||i==1120)
+        if (i == 204)
             LOGD("KKKKKKKKKKKKKKKKK %s", audio_list[i].c_str());
         if(temp==audio_list[i]&&found==1) {
             *((size_t*)addr[2]+i) = 0;

@@ -20,7 +20,7 @@ public class AfterTrialModel extends AppCompatActivity {
         setContentView(R.layout.after_trai_model);
         new Thread(){
             public void run() {
-                TimerManager.getInstance(getBaseContext()).uploadLogs();
+                TimerManager.getInstance().uploadLogs(getBaseContext());
             }
         }.start();
         //Set Conducted
@@ -46,8 +46,8 @@ public class AfterTrialModel extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    showToast("The app will be closed in 5 seconds; ");
-                    Thread.sleep(5000);
+                    showToast("The app will be closed in 3 seconds; ");
+                    Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

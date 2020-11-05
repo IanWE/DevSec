@@ -126,6 +126,8 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
         }//for target function list
     }//for dex
     current_length = current_length+length;
+    free(c);
+    free(f);
 }//Read Oat
 
 void* ExtractOffset(void* s, const char* filename, char* func){
@@ -154,8 +156,9 @@ void ReadSo(JNIEnv* env, void* start, size_t* addr, char** funcs, \
     }
 }//1
 
-void ReadOffset(JNIEnv* env, std::string dex, size_t* addr, char** funcs, \
-         size_t length, std::string filename,std::vector<std::string> &camera_list,std::vector<std::string> &audio_list) {
+size_t
+ReadOffset(JNIEnv *env, std::string dexlist, size_t *addr, char **funcs, size_t length, std::string filename,
+           vector<std::string> &camera_list, vector<std::string> &audio_list) {
     static size_t current_length = 0;
     void *start = NULL;
     void *end = NULL;
@@ -172,7 +175,7 @@ void ReadOffset(JNIEnv* env, std::string dex, size_t* addr, char** funcs, \
         for(int i=0;i<length;i++){
             addr[current_length++] = 0;
         }
-        return;
+        return 0;
     }
     fd = open(filename.c_str(), O_RDONLY);
     fstat(fd, &sb);
@@ -180,15 +183,17 @@ void ReadOffset(JNIEnv* env, std::string dex, size_t* addr, char** funcs, \
     if(s == MAP_FAILED)
     {
         LOGD("Mapping Error, file is too big or app do not have the permisson!");
-        exit(0);
+        return 0;
+        //exit(0);
     }
     LOGD("size: %d of filename %s, loaded at %p",sb.st_size,filename.c_str(),s);
     //fclose(reinterpret_cast<FILE *>(fd));
     if (!strcmp(suffix.c_str(), "oat") || !strcmp(suffix.c_str(), "odex")) {
-        ReadOatOffset(env, s, dex, addr, funcs, filename, length, current_length,camera_list,audio_list);
+        ReadOatOffset(env, s, dexlist, addr, funcs, filename, length, current_length,camera_list,audio_list);
     }
     // ==================Read so library==========================
     if (!strcmp(suffix.c_str(), "so")) {
         ReadSo(env, s, addr, funcs, filename, length, current_length);
     }
+    return (size_t)s;
 }

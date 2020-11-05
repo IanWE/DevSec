@@ -22,7 +22,7 @@ public class RestartTest extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.restart_application);
         Button restart_button = findViewById(R.id.recheck);
-        TimerManager.getInstance(getBaseContext()).uploadLogs();
+        TimerManager.getInstance().uploadLogs(getBaseContext());
         restart_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -22,7 +22,7 @@ public class FilterRunnable implements Runnable {
         SharedPreferences edit = mContext.getSharedPreferences("user", Context.MODE_PRIVATE);
         String name = edit.getString("adler", "None");
         if (!name.equals("None")) {
-            code = TimerManager.getInstance(mContext).getCode(name);
+            code = TimerManager.getInstance().getCode(mContext,name);
             if (code==null) {
                 Log.d("FilterCheck", "Request Failed");
                 String filter_string = edit.getString("filter",null);

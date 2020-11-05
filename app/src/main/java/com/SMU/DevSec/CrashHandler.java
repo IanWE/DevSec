@@ -82,7 +82,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
             LogcatHelper.getInstance(mContext).stop();
             new Thread() {
                 public void run() {
-                    TimerManager.getInstance(mContext).uploadLogs();
+                    TimerManager.getInstance().uploadLogs(mContext);
                 }
             }.start();
             try {

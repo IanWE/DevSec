@@ -34,6 +34,7 @@ import androidx.core.app.NotificationCompat;
 import static com.SMU.DevSec.CacheScan.answered;
 import static com.SMU.DevSec.CacheScan.mContext;
 import static com.SMU.DevSec.CacheScan.notification;
+import static com.SMU.DevSec.CacheScan.notifying;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.MainActivity.collect_only;
 import static com.SMU.DevSec.MainActivity.cs;
@@ -48,11 +49,12 @@ public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
     private static final String TAG = "JobService";
     private static int label=0;
-    public static ArrayList<SideChannelValue> sideChannelValues;
-    public static ArrayList<GroundTruthValue> groundTruthValues;
-    public static ArrayList<UserFeedback> userFeedbacks;
-    public static ArrayList<CompilerValue> compilerValues;
-    public static ArrayList<FrontAppValue> frontAppValues;
+    public static ArrayList<SideChannelValue> sideChannelValues = new ArrayList<>();
+    public static ArrayList<GroundTruthValue> groundTruthValues = new ArrayList<>();
+    public static ArrayList<UserFeedback> userFeedbacks = new ArrayList<>();
+    public static ArrayList<CompilerValue> compilerValues = new ArrayList<>();
+    public static ArrayList<FrontAppValue> frontAppValues = new ArrayList<>();
+    static int[] pattern_filter = null;
     int scValueCount = 1;
     int index = 1;
     long cumulativeTime;
@@ -61,6 +63,10 @@ public class SideChannelJob extends Service {
     private static final String description =  "Collecting Data";
     static Lock locker = new ReentrantLock();
     long start_time = 0;
+    boolean datacollecting = false;
+    Thread thread_collect;
+    Thread thread_notify;
+
     /**
      *通过通知启动服务
      */
@@ -101,8 +107,10 @@ public class SideChannelJob extends Service {
     public int onStartCommand(Intent intent,int flags,int startId){
         //int pid = android.os.Process.myPid(); //get the self pid
         Log.d(TAG, "Job started");
-        Toast.makeText(this, "Started Data Collection", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Started Data Collection", Toast.LENGTH_SHORT).show();
         doBackgroundWork();
+        Toast.makeText(this, "Job scheduled successfully", Toast.LENGTH_SHORT)
+                .show();
         return super.onStartCommand (intent,flags,startId);
     }
 
@@ -110,27 +118,38 @@ public class SideChannelJob extends Service {
      * Method to run data collection in the background
      */
     public void doBackgroundWork() {
-        start_time = System.currentTimeMillis();
         Log.d(TAG, "New Thread Created");
         // Start scan
         if (stage == 0) {
             // Send the job to a different thread
-            new Thread(new Runnable() {
+            thread_collect = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    while(datacollecting) {
+                        Log.d(TAG,"The data collection thread is still running, wait until it stop");
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     // Initializing primitives and objects
                     int count = 0;
+                    /*
                     sideChannelValues = new ArrayList<>();
                     groundTruthValues = new ArrayList<>();
                     compilerValues = new ArrayList<>();
                     userFeedbacks = new ArrayList<>();
                     frontAppValues = new ArrayList<>();
+                     */
                     StorageManager storageManager =
                             (StorageManager) getSystemService(Context.STORAGE_SERVICE);
                     BatteryManager batteryManager =
                             (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
                     // Loop to collect side channel values via API calls
+                    start_time = System.currentTimeMillis();
                     while (continueRun) {
+                        datacollecting = true;
                         try {
                             String[] volumes = (String[]) storageManager.getClass()
                                     .getMethod("getVolumePaths", new Class[0])
@@ -249,7 +268,7 @@ public class SideChannelJob extends Service {
                         // Log.d(TAG, "run: " + count);
                         // Send side channel values to a new thread and start data collection in another
                         // different thread after collecting 1000 sets of side channel values
-                        if (count % 1020 == 0) {
+                        if (count % 300 == 0) {
                             new Thread(new JobInsertRunnable(getBaseContext())).start();
                             Log.d(TAG, "DB Updated");
                             //Clear the updated data
@@ -258,9 +277,11 @@ public class SideChannelJob extends Service {
                             cumulativeTime = 0;
                             count = 0;
                         }
-                    }
+                    }//while
+                    datacollecting = false;
                 }
-            }).start();
+            });
+            thread_collect.start();
 
             new Thread(new Runnable() {
                 @Override
@@ -275,15 +296,13 @@ public class SideChannelJob extends Service {
                         e.printStackTrace();
                     }
                     //Start Scaning
-                    //scan( CacheScan.dexlist, CacheScan.filenames, CacheScan.func_lists);
-                    int[] pattern_filter = Utils.getArray(mContext, "ptfilter");
-                    //for(int i=0;i<pattern_filter.length;i++)
-                    //    Log.d(TAG,"ptfilter:"+pattern_filter[i]);
+                    if(pattern_filter==null)
+                        pattern_filter = Utils.getArray(mContext, "ptfilter");
                     scan(pattern_filter, pattern_filter.length);
                 }
             }).start();
 
-            new Thread(new Runnable() {
+            thread_notify = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -298,7 +317,8 @@ public class SideChannelJob extends Service {
                         e.printStackTrace();
                     }
                 }
-            }).start();
+            });
+            thread_notify.start();
         }
         else{
             new Thread(new Runnable() {
@@ -325,11 +345,9 @@ public class SideChannelJob extends Service {
                 }
             }).start();
         }
-        Toast.makeText(this, "Job scheduled successfully", Toast.LENGTH_SHORT)
-                .show();
     }
 
-    public native String scan(int[] pattern,int length);
+    public native void scan(int[] pattern,int length);
     public native void trial2();
     public native void pause();
     /**
@@ -355,9 +373,7 @@ public class SideChannelJob extends Service {
         super.onCreate();
         Log.d("foreground", "onCreate");
         //如果API在26以上即版本为O则调用startForefround()方法启动服务
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            setForegroundService();
-        }
+        setForegroundService();
     }
     @Override
     public void onDestroy(){
@@ -366,25 +382,22 @@ public class SideChannelJob extends Service {
         pause();
         //locker.lock();
         if(stage==0) {//not in trial mode
-            new Thread(new JobInsertRunnable(getBaseContext())).start();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    String r = TimerManager.getInstance(mContext).uploadTimeCheck(minutes);//
-                    if(r!=null&&r.equals("1"))
-                        Log.d(TAG,"Running time are uploaded successfully");
-                    else
-                        Log.d(TAG,"Unable to upload the running time");
-                }
-            }).start();
+            //if(sideChannelValues!=null&&sideChannelValues.size()>0)
+            //    new Thread(new JobInsertRunnable(getBaseContext())).start();
+            if(minutes>0) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String r = TimerManager.getInstance().uploadTimeCheck(mContext, minutes);//
+                        if (r != null && r.equals("1"))
+                            Log.d(TAG, "Running time are uploaded successfully");
+                        else
+                            Log.d(TAG, "Unable to upload the running time");
+                    }
+                }).start();
+            }
         }
         //locker.unlock();
-        insert_locker.lock();//lock until the inserting finished.
-        sideChannelValues = new ArrayList<>();
-        insert_locker.unlock();
-        continueRun = false;
-        Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
-                .show();
         SharedPreferences edit = getBaseContext().getSharedPreferences("user",0);
         SharedPreferences.Editor editor = edit.edit();
         editor.putLong("Answered",answered);//record the numbr of notification
@@ -392,6 +405,19 @@ public class SideChannelJob extends Service {
         editor.putLong("lastday",lastday);
         editor.putLong("day",day);
         editor.commit();
+        continueRun = false;
+        //make sure threads are stopped
+        if(thread_collect!=null) {
+            try {
+                thread_collect.join();
+                thread_notify.interrupt();
+                thread_notify.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
+                .show();
     }
 
     @Nullable

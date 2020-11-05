@@ -6,6 +6,7 @@ public class UserFeedback {
     int event;
     Long answeringtime;
     int choice;
+    int pattern;
     /**
      * Constructor for this POJO class to store side channel values
      */
@@ -39,4 +40,12 @@ public class UserFeedback {
     public String getApp() {return app;}
 
     public void setApp(String app) {this.app = app;}
+
+    public void setPattern(int cmp) {
+        pattern = cmp;
+    }
+
+    public int getPattern() {
+        return pattern;
+    }
 }

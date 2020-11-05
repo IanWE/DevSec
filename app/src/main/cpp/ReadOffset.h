@@ -27,8 +27,9 @@ void* ExtractOffset(void* s, const char* filename, char* func);
 void ReadSo(JNIEnv* env, void* start, size_t* addr, char** funcs, \
         std::string read_file, size_t length, size_t &current_length);
 
-void ReadOffset(JNIEnv* env, std::string dexlist, size_t* addr, char** funcs, \
-         size_t length, std::string filename,std::vector<std::string> &camera_list,std::vector<std::string> &audio_list);
+size_t
+ReadOffset(JNIEnv *env, std::string dexlist, size_t *addr, char **funcs, size_t length, std::string filename,
+           std::vector<std::string> &camera_list, std::vector<std::string> &audio_list);
 
 void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr, char** funcs, \
         std::string read_file, size_t length, size_t &current_length);

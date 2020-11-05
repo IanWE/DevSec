@@ -17,70 +17,36 @@ import android.widget.Toast;
 
 import static com.SMU.DevSec.MainActivity.pkg_permission;
 import static com.SMU.DevSec.MainActivity.stage;
-import static com.SMU.DevSec.SideChannelJob.continueRun;
-import static com.SMU.DevSec.Utils.readSaveFile;
 
 public class TrialModelStages {
     Context mContext;
-    private static TrialModelStages INSTANCE = null;
-    final String TAG = "CacheScan_ItemsCheck";
+    final String TAG = "CacheScan_TrialMode";
     volatile String[] apps = new String[5];
     boolean stop = false;
     int s = 0;
     int s_1 = 0;
     int seconds = 10;
+    Thread thread;
 
-    public TrialModelStages(Context context) {
-        mContext = context;
+    TrialModelStages(Context context) {
+        /*
         new Thread(new Runnable() {
             @Override
             public void run() {
                 GetLastApps();
             }
         }).start();
+        */
+        mContext = context;
     }
 
-    public static TrialModelStages getInstance(Context context) {
-        if (INSTANCE == null) {
-            INSTANCE = new TrialModelStages(context);
-        }
-        return INSTANCE;
-    }
-
-    public int checkconducted(int c) {
-        if(c==0) {
-            //stage1
-            //if(s_1==0)
-            //    return 1;
-            if(CacheScan.getthreshold()==9999)
-                return 2;
-            int[] pattern_filter = getFilter();
-            Log.d(TAG, "The Number of Filtered Addresses in Camera and Audio:" + Utils.sum(pattern_filter));
-            Utils.saveArray(mContext, pattern_filter, "ptfilter");
-            return 1;
-        }
-        //stage2
-        if (c==2||c==1) {
-            if(apps.length==0)
-                return 0;
-            for(int i=apps.length-1;i>=0;i--){
-                int permission_type = 0;
-                if (pkg_permission.containsKey(apps[i]))
-                    permission_type = pkg_permission.get(apps[i]);
-                Log.d(TAG,"Application:"+apps[i]+", Permisson:"+permission_type);
-                if ((permission_type & c) == c) {//check the permisson 1 camera 2 audio
-                    int[] pattern = CacheScan.getPattern(c);
-                    //sum the pattern
-                    int sum = Utils.sum(pattern);
-                    Log.d(TAG,"Activated Function:"+sum);
-                    if (sum == 0)//if no activations
-                        return 2;
-                    Utils.saveArray(mContext, pattern, c + "");
-                    return 1;
-                }
-            }
-        }
-        return 0;
+    public int checkconducted() {
+        if (CacheScan.getthreshold() == 9999)
+            return 2;
+        int[] pattern_filter = getFilter();
+        Log.d(TAG, "The Number of Filtered Addresses in Camera and Audio:" + Utils.sum(pattern_filter));
+        Utils.saveArray(mContext, pattern_filter, "ptfilter");
+        return 1;
     }
 
     public int GetLastApps(){
@@ -112,28 +78,16 @@ public class TrialModelStages {
             TextView tvContent = window.findViewById(R.id.stage_content);
             //Log.d(TAG,str);
             SpannableStringBuilder ssb = new SpannableStringBuilder();
-            if(s==0){
-                //if(s_1!=0) {
-                    //ssb.append("You are at stage 1. We will need " + seconds + " seconds to check the functions. Please switch to the home page and wait for "+seconds+" seconds; then switch back.");
-                ssb.append("You are at the trial mode. We will need " + seconds + " seconds to check the functions. Please do not use camera or audiorecording function during this period.");
-                new Thread(new Runnable() {
+            ssb.append("You are at the trial mode. We will need " + seconds + " seconds to check the functions. Please do not use camera or audiorecording function during this period.");
+            thread = new Thread(new Runnable() {
                         @Override
                         public void run() {
                             trial1();//
                         }
-                    }).start();
-                    time = System.currentTimeMillis();
-                //} else{
-                //    ssb.append("    You are at stage 1-2. Please try to launch 3 apps you use everyday (such as Instagram, Telegram and WhatsApp, etc.)," +
-                //            " and keep them for few seconds. This can help eliminate some false notifications.\n" +
-                //            "    It should be noted that do not use the camera and recording functions of these apps during the stage 1-2. " +
-                //            "\n    After that, please switch back and click the \"Next\" button");
-                //}
-            }
-            if (s == 1)
-                ssb.append("(Important!) You are at stage 2. Please turn on the Camera for 3 seconds and close it; then switch back and click the \"Next\" button");
-            else if(s==2)
-                ssb.append("(Important!) You are at stage 3. Please turn on the Whatsapp(or Telegram/Wechat) and use the in-app recording function for 3 seconds and close it; then switch back and click the \"Next\" button");
+                    });
+            thread.start();
+            time = System.currentTimeMillis();
+
             tvContent.setMovementMethod(ScrollingMovementMethod.getInstance());
             tvContent.setText(ssb);
             Button next = window.findViewById(R.id.next_stage);
@@ -148,7 +102,7 @@ public class TrialModelStages {
                             return;
                         }
                     }
-                    int r = checkconducted(s);
+                    int r = checkconducted();
                     SharedPreferences edit = mContext.getSharedPreferences("user", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = edit.edit();
                     if(r==0){
@@ -163,54 +117,20 @@ public class TrialModelStages {
                         mContext.startActivity(intent);
                     }
                     if(r==1) {
-                        if (s == 0) {
-                            /*
-                            //if(s_1==0){
-                            //    s_1 = 1;
-                            //    alertDialog.cancel();
-                            //    getInstance(mContext).startDialog();
-                            //    return;
-                            //}
-                            s = 1;
-                            stage = 2;//flag to start scan
-                            alertDialog.cancel();
-                            getInstance(mContext).startDialog();
-                            return;
-                             */
-                            showToast("Thanks, you have completed all the trials.");
-                            stop = true;
-                            stage = 0;
-                            editor.putString("trialmodel","1");
-                            editor.putLong("lastday",System.currentTimeMillis() / (1000 * 60 * 60 * 24));
-                            editor.putLong("day",1);
-                            editor.apply();
-                            alertDialog.cancel();
-                            Intent intent = new Intent(mContext, AfterTrialModel.class);
-                            try {
-                                Thread.sleep(200);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            mContext.startActivity(intent);
+                        showToast("Thanks, you have completed all the trials.");
+                        stop = true;
+                        stage = 0;
+                        try {
+                            thread.interrupt();
+                            thread.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
-                        if (s == 1) {
-                            s = 2;
-                            flush(s);
-                            alertDialog.cancel();
-                            getInstance(mContext).startDialog();
-                            return;
-                        }
-                        if (s == 2) {
-                            showToast("Thanks, you have completed all the trials.");
-                            stop = true;
-                            editor.putString("trialmodel","1");
-                            editor.putLong("lastday",System.currentTimeMillis() / (1000 * 60 * 60 * 24));
-                            editor.putLong("day",0);
-                            editor.apply();
-                            alertDialog.cancel();
-                            Intent intent = new Intent(mContext, AfterTrialModel.class);
-                            mContext.startActivity(intent);
-                        }
+                        editor.putString("trialmodel","1");
+                        editor.putLong("lastday",System.currentTimeMillis() / (1000 * 60 * 60 * 24));
+                        editor.putLong("day",1);
+                        editor.commit();
+                        alertDialog.cancel();
                     }
                 }
             });
@@ -235,5 +155,5 @@ public class TrialModelStages {
 
     public static native void trial1();
     public static native int[] getFilter();
-    public static native void flush(int c);
+    //public static native void flush(int c);
 }
