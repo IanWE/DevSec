@@ -20,11 +20,13 @@ public class LogcatHelper {
     private int mPId;
     private String TAG = "LogHelper";
     private boolean s = false;
+    private String version = "";
     /**
      * 初始化目录
      */
     private void init(Context context) {
         PATH_LOGCAT = context.getFilesDir() + "/log.txt";
+        version = Utils.getVersionName(context);
         File file = new File(PATH_LOGCAT);
         Log.d(TAG, PATH_LOGCAT);
     }
@@ -104,7 +106,7 @@ public class LogcatHelper {
                 mReader = new BufferedReader(new InputStreamReader(
                         logcatProc.getInputStream()), 1024);
                 String line = null;
-                out.write(BasicInfo.getBasicInfo().getBytes());
+                out.write((BasicInfo.getBasicInfo()+" "+version).getBytes());
                 while ((line = mReader.readLine()) != null||mRunning) {
                     if (!mRunning) {
                         break;

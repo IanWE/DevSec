@@ -21,11 +21,11 @@ import static com.SMU.DevSec.MainActivity.stage;
 public class TrialModelStages {
     Context mContext;
     final String TAG = "CacheScan_TrialMode";
-    volatile String[] apps = new String[5];
+    private volatile String[] apps = new String[5];
     boolean stop = false;
     int s = 0;
     int s_1 = 0;
-    int seconds = 10;
+    private int seconds = 10;
     Thread thread;
 
     TrialModelStages(Context context) {
@@ -52,7 +52,7 @@ public class TrialModelStages {
     public int GetLastApps(){
         int i = 0;
         while(true){
-            String app = CacheScan.getTopApp();
+            String app = CacheScan.getTopApp(mContext);
             apps[i] = app;
             i = (i+1)%apps.length;
             if(stop)

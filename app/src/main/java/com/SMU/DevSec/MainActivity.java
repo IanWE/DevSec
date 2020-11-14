@@ -85,8 +85,8 @@ public class MainActivity extends AppCompatActivity {
     private ItemsCheck itemsCheck;
     private PermissionRequire permissionRequire;
     private Button buttoninc,buttondec;
-    public static final int SIZE_LIMIT = 20;
-    public static final int TIME_INTERVAL = 10;
+    public static final int SIZE_LIMIT = 10;
+    public static final int TIME_INTERVAL = 5;
     public static boolean isCollected = false;//whether got data
     static String trial;
     static long lastday = 0;
@@ -245,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         SharedPreferences edit = getSharedPreferences("user", 0);
         final String name = edit.getString("RSA", "None");
-        final boolean conducted = edit.getBoolean("Conducted",false);
+        //final boolean conducted = edit.getBoolean("Conducted",false);
         //check permisson
         permissionRequire = new PermissionRequire(MainActivity.this);
         AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);

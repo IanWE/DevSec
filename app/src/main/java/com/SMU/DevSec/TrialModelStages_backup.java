@@ -17,6 +17,8 @@ import android.widget.Toast;
 
 import static com.SMU.DevSec.MainActivity.pkg_permission;
 import static com.SMU.DevSec.MainActivity.stage;
+import static com.SMU.DevSec.TrialModelStages.getFilter;
+import static com.SMU.DevSec.TrialModelStages.trial1;
 
 public class TrialModelStages_backup {
     private static TrialModelStages_backup INSTANCE = null;
@@ -82,7 +84,8 @@ public class TrialModelStages_backup {
     public int GetLastApps(){
         int i = 0;
         while(true){
-            String app = CacheScan.getTopApp();
+            //String app = CacheScan.getTopApp();
+            String app = "";
             apps[i] = app;
             i = (i+1)%apps.length;
             if(stop)
@@ -184,7 +187,7 @@ public class TrialModelStages_backup {
                         }
                         if (s == 1) {
                             s = 2;
-                            flush(s);
+                            //flush(s);
                             alertDialog.cancel();
                             getInstance().startDialog(mContext);
                             return;
@@ -222,7 +225,7 @@ public class TrialModelStages_backup {
         }.start();
     }
 
-    public static native void trial1();
-    public static native int[] getFilter();
-    public static native void flush(int c);
+    //public static native void trial1();
+    //public static native int[] getFilter();
+    //public static native void flush(int c);
 }

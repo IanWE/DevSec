@@ -58,9 +58,8 @@ import static com.SMU.DevSec.SideChannelJob.locker;
 import static java.util.Objects.*;
 
 public class CacheScan {
-    private static CacheScan INSTANCE = null;
     private static final String TAG = "CacheScan";
-    static Context mContext;
+    //static Context mContext;
     static String[] dexlist;
     static String[] filenames;
     static String[] func_lists;
@@ -93,15 +92,17 @@ public class CacheScan {
     long setfalse = 0;
     boolean dismiss = false;
     boolean exceedtime = false;
+    static File CacheDir;
 
-    CacheScan(Context context) throws IOException {
-        mContext = context;
-        init();
+    CacheScan(Context mContext) throws IOException {
+        //mContext = context;
+        init(mContext);
     }
     //6 function
-    private void init() throws IOException {
+    private void init(Context mContext) throws IOException {
         //exec("cat /proc/`pgrep DevSec`/maps");
         int pid = android.os.Process.myPid();
+        CacheDir = mContext.getCacheDir();
         //behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
         //behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
         behaviour_map.put(audioapi, "AudioRecord");
@@ -225,7 +226,7 @@ public class CacheScan {
                 JarEntry je = (JarEntry) e.nextElement();
                 Log.d(TAG, "jar file has file:" + je.getName());
                 if (je.getName().endsWith(".dex") || je.getName().endsWith(".jar")) {
-                    filename = mContext.getCacheDir() + "/" + je.getName();
+                    filename = CacheDir + "/" + je.getName();
                     File file = new File(filename);
                     unpack(jf, je, file);
                     Log.d(TAG, "Extract Jar:" + filename);
@@ -268,10 +269,9 @@ public class CacheScan {
         groundTruthValues.add(groundTruthValue);
     }
     */
-    public static String getTopApp() {
+    public static String getTopApp(Context mContext) {
         check = true;
         UsageStatsManager mUsageStatsManager = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);//usagestats
-        //Log.e("TopPackage Name", mUsageStatsManager.isAppInactive("e.smu.questlocation")+"");//10
         long time = System.currentTimeMillis();
         String topPackageName = "None";
         int gt = 0;
@@ -377,7 +377,7 @@ public class CacheScan {
         }
     }
 
-    public void showToast(final String text) {
+    public void showToast(final Context mContext, final String text) {
         new Thread() {
             @Override
             public void run() {
@@ -399,7 +399,7 @@ public class CacheScan {
         return p;
     }
 
-    public void Notify() { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
+    public void Notify(Context mContext) { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
         int[] flags = CacheCheck();
         //insert the logs into dataset
         long[] times = GetTimes();
@@ -422,7 +422,7 @@ public class CacheScan {
             }
         }
         //get app
-        app = getTopApp(); // get package name. Even if there is actually an activation, the returned app may still be a None
+        app = getTopApp(mContext); // get package name. Even if there is actually an activation, the returned app may still be a None
         int permission_type = 0;
         if(pkg_permission.containsKey(app)){
             permission_type = pkg_permission.get(app);
@@ -507,7 +507,7 @@ public class CacheScan {
                         if(cmp<=(int)(thresholdforpattern[i-1]*thforcamera)){
                             cleanpattern[i-1]++;
                             HandleCapture(i);
-                            if(cleanpattern[i-1]>3){//accumulating
+                            if(cleanpattern[i-1]>2){//accumulating
                                 cleanpattern[i-1] = 0;
                                 ClearPattern(i);
                                 Log.d(TAG,"pattern-"+i+" clear : "+cmp);
@@ -515,20 +515,6 @@ public class CacheScan {
                             Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforcamera);
                             continue;
                         }
-                        /*
-                        else if((AppStringforcheck.equals("None")||i==2)&&cmp<(int)(thresholdforpattern[i-1]*thforaudio)){//when audio activated, camera should less than 50% activation,ortherwise pop a camera event
-                            cleanpattern[i-1]++;
-                            HandleCapture(i);
-                            if(cleanpattern[i-1]>5){
-                                cleanpattern[i-1] = 0;
-                                ClearPattern(i);
-                                Log.d(TAG,"pattern-"+i+" clear : "+cmp);
-                            }
-                            HandleCapture(i);
-                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforaudio);
-                            continue;
-                        }
-                        */
                         else if(i==2) {
                             int[] patternX = GetPattern(1);
                             //int sumcpattern = Utils.pattern_compare(ALpattern.get(0), patternX);
@@ -561,7 +547,7 @@ public class CacheScan {
                     insert_locker.unlock();
                     if (i==2) {
                         lastaudio = time;
-                        if (lastaudio - lastcamera < 2500||(pkg_permission.get(app)&i)!=i) {//if the camera follow audio tightly
+                        if (lastaudio - lastcamera < 2000||(pkg_permission.get(app)&i)!=i) {//if the camera follow audio tightly
                             Log.d(TAG, "Skip a audio event" + (lastaudio - lastcamera));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -571,7 +557,7 @@ public class CacheScan {
                     if (i==1)//if camera is active, we should handle audio api, since it will come with camera api
                     {
                         lastcamera = time;
-                        if (lastcamera - lastaudio < 2500||(pkg_permission.get(app)&i)!=i) {
+                        if (lastcamera - lastaudio < 2000||(pkg_permission.get(app)&i)!=i) {
                             Log.d(TAG, "Skip a camera event" + (lastcamera - lastaudio));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -642,7 +628,7 @@ public class CacheScan {
         intent.putExtra("pattern",cmp);
     }
 
-    private void ResetThreshold() {
+    private void ResetThreshold(Context mContext) {
         if (!reset_thresh) {
             int threshold = getthreshold();
             if (threshold != 0) {

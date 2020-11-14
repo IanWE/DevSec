@@ -12,7 +12,6 @@ import android.util.Log;
 import static com.SMU.DevSec.CacheScan.answered;
 import static com.SMU.DevSec.CacheScan.handled;
 import static com.SMU.DevSec.CacheScan.lastactivetime;
-import static com.SMU.DevSec.CacheScan.mContext;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.SideChannelJob.locker;
 import static com.SMU.DevSec.SideChannelJob.userFeedbacks;

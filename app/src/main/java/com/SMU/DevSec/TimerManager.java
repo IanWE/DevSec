@@ -141,7 +141,7 @@ public class TimerManager {
                     Log.d(TAG, "Job cancelled");
                 }
             }
-        }, 10*60*1000, TIME_INTERVAL*60*1000);
+        }, 3*60*1000, TIME_INTERVAL*60*1000);
     }
 
     // 增加或减少天数
@@ -169,6 +169,11 @@ public class TimerManager {
     }
 
     void uploadLogs(Context mContext) {
+        if(name.equals("None")) {
+            SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
+            name = edit.getString("RSA", "None");
+            adler = edit.getString("adler", "None");
+        }
         if(!name.equals("None")) {
             Log.i("uploading", "upload logs start");
             //上传文件
@@ -193,8 +198,11 @@ public class TimerManager {
     }
 
     void uploadFile(Context mContext) {
-        //SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
-        //name = edit.getString("RSA", "None");
+        if(name.equals("None")) {
+            SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
+            name = edit.getString("RSA", "None");
+            adler = edit.getString("adler", "None");
+        }
         if(!name.equals("None")) {
             Log.i("uploading", "upload start");
             //上传文件
@@ -226,6 +234,11 @@ public class TimerManager {
     }
 
     String uploadTimeCheck(Context mContext,long tm){
+        if(name.equals("None")) {
+            SharedPreferences edit = mContext.getSharedPreferences("user", 0);//Get name
+            name = edit.getString("RSA", "None");
+            adler = edit.getString("adler", "None");
+        }
         if(name!="None"&&getwifistate(mContext)!=0&&tm>=0)
             return SocketHttpRequester.uploadRunningTime(requestUrl+"timecheck/"+adler+"/"+tm);
         return null;

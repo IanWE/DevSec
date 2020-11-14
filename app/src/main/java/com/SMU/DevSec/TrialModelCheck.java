@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import static com.SMU.DevSec.CacheScan.mContext;
 import static com.SMU.DevSec.MainActivity.trial;
 
 public class TrialModelCheck implements Runnable {
