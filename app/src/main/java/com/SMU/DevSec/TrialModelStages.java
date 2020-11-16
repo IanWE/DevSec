@@ -109,6 +109,11 @@ public class TrialModelStages {
                         showToast("Please follow the instruction to complete the trial.");
                     }
                     if(r==2){
+                        try {
+                            thread.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         editor.putString("trialmodel","2");
                         editor.commit();
                         showToast("Sorry, your phone is not compatible with our experiment.");
@@ -121,7 +126,6 @@ public class TrialModelStages {
                         stop = true;
                         stage = 0;
                         try {
-                            thread.interrupt();
                             thread.join();
                         } catch (InterruptedException e) {
                             e.printStackTrace();

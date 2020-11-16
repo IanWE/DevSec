@@ -7,8 +7,6 @@ import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
-
 public class ActivityforResult extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -10,24 +10,16 @@ import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.SMU.DevSec.SideChannelJob.compilerValues;
-import static com.SMU.DevSec.SideChannelJob.frontAppValues;
-import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
-import static com.SMU.DevSec.SideChannelJob.locker;
-import static com.SMU.DevSec.SideChannelJob.sideChannelValues;
-import static com.SMU.DevSec.SideChannelJob.userFeedbacks;
+import static com.SMU.DevSec.MainActivity.compilerValues;
+import static com.SMU.DevSec.MainActivity.frontAppValues;
+import static com.SMU.DevSec.MainActivity.groundTruthValues;
+import static com.SMU.DevSec.MainActivity.sideChannelValues;
+import static com.SMU.DevSec.MainActivity.userFeedbacks;
 import static com.SMU.DevSec.Utils.DATABASE_FILENAME;
 import static com.SMU.DevSec.Utils.DATABASE_PATH;
 
 class JobInsertRunnable implements Runnable {
     Context context;
-    /*
-    ArrayList<SideChannelValue> sideChannelValues;
-    ArrayList<GroundTruthValue> groundTruthValues;
-    ArrayList<UserFeedback> userFeedbacks;
-    ArrayList<FrontAppValue> frontAppValues;
-    private ArrayList<CompilerValue> compilerValues;
-     */
     SQLiteDatabase db;
     ContentValues values;
     long startTime;

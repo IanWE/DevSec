@@ -44,7 +44,7 @@ public class LogcatHelper {
     }
 
     public void start() {
-        if(s==false) {
+        if(!s) {
             s = true;
             if (mLogDumper == null)
                 mLogDumper = new LogDumper(String.valueOf(mPId), PATH_LOGCAT);
@@ -53,7 +53,7 @@ public class LogcatHelper {
     }
 
     public void stop() {
-        if(s==true) {
+        if(s) {
             s = false;
             if (mLogDumper != null) {
                 mLogDumper.stopLogs();

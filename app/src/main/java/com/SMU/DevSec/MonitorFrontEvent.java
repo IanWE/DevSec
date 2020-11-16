@@ -11,7 +11,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.SMU.DevSec.MainActivity.previous_name;
-import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
 
 public class MonitorFrontEvent implements Runnable {//deprecated
     private static final String CHANNEL_ID = "AISG";

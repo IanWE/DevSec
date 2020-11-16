@@ -13,8 +13,8 @@ import static com.SMU.DevSec.CacheScan.answered;
 import static com.SMU.DevSec.CacheScan.handled;
 import static com.SMU.DevSec.CacheScan.lastactivetime;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
+import static com.SMU.DevSec.MainActivity.userFeedbacks;
 import static com.SMU.DevSec.SideChannelJob.locker;
-import static com.SMU.DevSec.SideChannelJob.userFeedbacks;
 
 public class NotificationClickReceiver extends BroadcastReceiver {
     final String TAG = "Notification";

@@ -48,7 +48,6 @@ attack_slave(libflush_session_t *libflush_session,  int sum_length, pthread_mute
              int *continueRun, int threshold, int *flags, long *times, int *thresholds, int *logs,
              int* log_length, size_t *addr, int *camera_pattern, int *audio_pattern,
              int *length_of_camera_audio);
-
 /*
 #define TAG_NAME "libflush"
 #define log_err(fmt,args...) __android_log_print(ANDROID_LOG_ERROR, TAG_NAME, (const char *) fmt, ##args)

@@ -92,7 +92,7 @@ public class TimerManager {
         }, date, PERIOD_DAY);
     }
 
-    public void schedule_upload(final Context mContext) {
+    void schedule_upload(final Context mContext) {
         if(scheduled)
             return;
         scheduled = true;
@@ -123,17 +123,17 @@ public class TimerManager {
                     //if there are more than 30 files, stop service;
                 }
                 File[] files = getfilelist(mContext);
-                if(files.length>=100&&SideChannelJob.continueRun){
+                if(files!=null&&files.length>=100&&SideChannelJob.continueRun){
                     Intent stop=new Intent (mContext,SideChannelJob.class);
                     if(!check) {
                         return;
                     }
                     mContext.stopService(stop);
                     SideChannelJob.continueRun = false;
-                    mSwitch.post(new Runnable() {
+                    mSwitch[0].post(new Runnable() {
                         @Override
                         public void run() {
-                            mSwitch.setChecked(false);
+                            mSwitch[0].setChecked(false);
                         }
                     });
                     showToast(mContext,"You have more than 100 files need to be uploaded");
@@ -239,12 +239,12 @@ public class TimerManager {
             name = edit.getString("RSA", "None");
             adler = edit.getString("adler", "None");
         }
-        if(name!="None"&&getwifistate(mContext)!=0&&tm>=0)
+        if(!name.equals("None")&&getwifistate(mContext)!=0&&tm>=0)
             return SocketHttpRequester.uploadRunningTime(requestUrl+"timecheck/"+adler+"/"+tm);
         return null;
     }
 
-    File[] getfilelist(Context mContext){
+    private File[] getfilelist(Context mContext){
         final File filedir = mContext.getFilesDir();
         if (!filedir.exists()) {//判断路径是否存在
             return null;
@@ -254,7 +254,7 @@ public class TimerManager {
         return filedir.listFiles();
     }
 
-    public void showToast(final Context mContext, final String text) {
+    private void showToast(final Context mContext, final String text) {
         new Thread() {
             @Override
             public void run() {

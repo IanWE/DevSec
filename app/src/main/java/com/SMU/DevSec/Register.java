@@ -18,8 +18,6 @@ import java.util.zip.Adler32;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
-
 public class Register extends AppCompatActivity{
         private String email;
         @Override

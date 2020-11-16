@@ -38,8 +38,11 @@ import static androidx.core.app.NotificationCompat.FLAG_NO_CLEAR;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.MainActivity.audio;
 import static com.SMU.DevSec.MainActivity.camera;
+import static com.SMU.DevSec.MainActivity.compilerValues;
 import static com.SMU.DevSec.MainActivity.count_threshold;
 import static com.SMU.DevSec.MainActivity.filter;
+import static com.SMU.DevSec.MainActivity.frontAppValues;
+import static com.SMU.DevSec.MainActivity.groundTruthValues;
 import static com.SMU.DevSec.MainActivity.lastday;
 import static com.SMU.DevSec.MainActivity.day;
 import static com.SMU.DevSec.MainActivity.isCollected;
@@ -51,48 +54,39 @@ import static com.SMU.DevSec.MainActivity.quering;
 import static com.SMU.DevSec.MainActivity.status;
 import static com.SMU.DevSec.MainActivity.check;
 import static com.SMU.DevSec.MainActivity.trial;
-import static com.SMU.DevSec.SideChannelJob.compilerValues;
-import static com.SMU.DevSec.SideChannelJob.frontAppValues;
-import static com.SMU.DevSec.SideChannelJob.groundTruthValues;
 import static com.SMU.DevSec.SideChannelJob.locker;
 import static java.util.Objects.*;
 
 public class CacheScan {
     private static final String TAG = "CacheScan";
-    //static Context mContext;
-    static String[] dexlist;
-    static String[] filenames;
-    static String[] func_lists;
     String app;
-    int sameapp = 0;
-    public static boolean ischeckedaddr = false;
+    private int sameapp = 0;
+    static boolean ischeckedaddr = false;
     static boolean[] handled = {true, true, true, true};
-    public volatile static long lastactivetime = 0;
+    volatile static long lastactivetime = 0;
     private String preapp = "DevSec";
-    public boolean reset_thresh = false;
+    private boolean reset_thresh = false;
     private long lastcamera = 0;
     private long lastaudio = 0;
-    private int Length = 4;
     static long notification = 0;
     static long answered = 0;
     static boolean notifying = false;//
     boolean filtered = false;
-    static ArrayList<String> target_functions = new ArrayList<String>();
-    final HashMap<String, String> behaviour_map = new HashMap<String, String>();
-    String audioapi = "Audio";
-    String cameraapi = "Camera";
-    ArrayList<int[]> ALpattern = new ArrayList<int[]>();
-    int[] thresholdforpattern = {9,10};//number of different functions
-    String BehaviorList[] = {"Information","Camera","AudioRecorder","Location"};
-    double audio_threshold_level = 0.25;
-    double camera_threshold_level = 0.25;
-    int[] cleanpattern = {0,0};
-    String AppStringforcheck = "";
-    long firsthit = 0;
-    long setfalse = 0;
-    boolean dismiss = false;
-    boolean exceedtime = false;
-    static File CacheDir;
+    private static ArrayList<String> target_functions = new ArrayList<String>();
+    private final HashMap<String, String> behaviour_map = new HashMap<String, String>();
+    private ArrayList<int[]> ALpattern = new ArrayList<int[]>();
+    private int[] thresholdforpattern = {10,10};//number of different functions
+    private String[] BehaviorList = {"Information", "Camera", "AudioRecorder", "Location"};
+    private double audio_threshold_level = 0.25;
+    private double camera_threshold_level = 0.25;
+    private int[] cleanpattern = {0,0};
+    private String AppStringforcheck = "";
+    private long firsthit = 0;
+    private long setfalse = 0;
+    private boolean dismiss = false;
+    private boolean exceedtime = false;
+    private static File CacheDir;
+    public static boolean initializing = false;
 
     CacheScan(Context mContext) throws IOException {
         //mContext = context;
@@ -101,12 +95,15 @@ public class CacheScan {
     //6 function
     private void init(Context mContext) throws IOException {
         //exec("cat /proc/`pgrep DevSec`/maps");
+        initializing = true;
         int pid = android.os.Process.myPid();
         CacheDir = mContext.getCacheDir();
         //behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
         //behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
+        String audioapi = "Audio";
         behaviour_map.put(audioapi, "AudioRecord");
         //behaviour_map.put("_ZN7android5media12IAudioRecord11asInterfaceERKNS_2spINS_7IBinderEEE", "AudioRecorder");
+        String cameraapi = "Camera";
         behaviour_map.put(cameraapi, "Camera");
         AssetManager am = mContext.getAssets();
         ArrayList<String> dex = new ArrayList<String>();
@@ -154,9 +151,10 @@ public class CacheScan {
                 //Log.d(TAG, "TTTTTTTTTT "+pid+" funcs:" + funcs.toString() + " " + target_dex +" "+target_oat);
             }
         }
-        dexlist = (String[]) dex.toArray(new String[targets.length]);
-        filenames = (String[]) filename.toArray(new String[targets.length]);
-        func_lists = (String[]) func_list.toArray(new String[targets.length]);
+        //static Context mContext;
+        String[] dexlist = (String[]) dex.toArray(new String[targets.length]);
+        String[] filenames = (String[]) filename.toArray(new String[targets.length]);
+        String[] func_lists = (String[]) func_list.toArray(new String[targets.length]);
         //Log.d(TAG, "Target:" + target_func + " " + target_lib);
         SharedPreferences edit = mContext.getSharedPreferences("user",0);
         notification = edit.getLong("Notification",0);
@@ -164,15 +162,15 @@ public class CacheScan {
         lastday = edit.getLong("lastday", 0);
         day = edit.getLong("day", 0);
 
-        ALpattern.add(Utils.getArray(mContext,"1"));
-        ALpattern.add(Utils.getArray(mContext,"2"));
+        //ALpattern.add(Utils.getArray(mContext,"1"));
+        //ALpattern.add(Utils.getArray(mContext,"2"));
         //for(int i=0;i<ALpattern.size();i++){
             //thresholdforpattern[i] = Utils.sum(ALpattern.get(i));
         //    thresholdforpattern[i] = ALpattern.get(i).length;
         //}
         thresholdforpattern[0] = 10;
         thresholdforpattern[1] = 10;
-        init(dexlist,filenames,func_lists);//initiate the JNI function
+        init(dexlist, filenames, func_lists);//initiate the JNI function
         //ResetThreshold();
         //if(thresholdforpattern[0]<10)
         //    camera_threshold_level = 0.8;
@@ -180,6 +178,8 @@ public class CacheScan {
         //    audio_threshold_level = 0.8;
         //showToast("Intialized successfully");
         Log.d(TAG,"Threshold Level is at "+camera_threshold_level+"-"+audio_threshold_level);//only output
+        initializing = false;
+        check = true;
     }
 
     private String[] exec(int pid, String target) {
@@ -246,7 +246,7 @@ public class CacheScan {
     /*
     unpack jar
      */
-    public static void unpack(JarFile jarFile, JarEntry entry, File file) throws IOException {
+    private static void unpack(JarFile jarFile, JarEntry entry, File file) throws IOException {
         try (InputStream inputStream = jarFile.getInputStream(entry)) {
             try (OutputStream outputStream = new FileOutputStream(file)) {
                 int BUFFER_SIZE = 1024;
@@ -270,7 +270,6 @@ public class CacheScan {
     }
     */
     public static String getTopApp(Context mContext) {
-        check = true;
         UsageStatsManager mUsageStatsManager = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);//usagestats
         long time = System.currentTimeMillis();
         String topPackageName = "None";
@@ -393,13 +392,13 @@ public class CacheScan {
         }.start();
     }
 
-    public static int[] getPattern(int c){
+    static int[] getPattern(int c){
         int []p =GetPattern(c);
         ClearPattern(3);
         return p;
     }
 
-    public void Notify(Context mContext) { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
+    void Notify(Context mContext) { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
         int[] flags = CacheCheck();
         //insert the logs into dataset
         long[] times = GetTimes();
@@ -472,16 +471,17 @@ public class CacheScan {
                 + "notification:" + notification +" Sameapp:"+sameapp);
         if (Utils.sum(flags) != 0) {//if some function are activated
             //检查一次, 地址是否都被成功解析
+            int length = 4;
             if (!ischeckedaddr) {
                 int[] addrs = addr();//get the addresses
-                for (int i = 0; i < Length; i++) {
+                for (int i = 0; i < length; i++) {
                     unparsedaddr(addrs[i], i);
                 }
                 ischeckedaddr = true;
                 thresholdforpattern = GetT();
             }
             updateUI(4);
-            for (int i = 0; i < Length; i++) {//0-3  5 6
+            for (int i = 0; i < length; i++) {//0-3  5 6
                 String cur = target_functions.get(i);
                 if (flags[i] != 0){
                     int cmp = 0;
@@ -515,7 +515,7 @@ public class CacheScan {
                             Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforcamera);
                             continue;
                         }
-                        else if(i==2) {
+                        else if(i==2) {//if the pattern meet both camera and audio, present camera only
                             int[] patternX = GetPattern(1);
                             //int sumcpattern = Utils.pattern_compare(ALpattern.get(0), patternX);
                             int sumcpattern = Utils.sum(patternX);
@@ -545,9 +545,13 @@ public class CacheScan {
                     insert_locker.lock();
                     groundTruthValues.add(groundTruthValue);
                     insert_locker.unlock();
+                    int p =0;
+                    if(pkg_permission.containsKey(app)){
+                        p = pkg_permission.get(app);
+                    }
                     if (i==2) {
                         lastaudio = time;
-                        if (lastaudio - lastcamera < 2000||(pkg_permission.get(app)&i)!=i) {//if the camera follow audio tightly
+                        if (lastaudio - lastcamera < 2000||(p&i)!=i) {//if the camera follow audio tightly
                             Log.d(TAG, "Skip a audio event" + (lastaudio - lastcamera));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -557,7 +561,7 @@ public class CacheScan {
                     if (i==1)//if camera is active, we should handle audio api, since it will come with camera api
                     {
                         lastcamera = time;
-                        if (lastcamera - lastaudio < 2000||(pkg_permission.get(app)&i)!=i) {
+                        if (lastcamera - lastaudio < 2000||(p&i)!=i) {
                             Log.d(TAG, "Skip a camera event" + (lastcamera - lastaudio));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -655,29 +659,28 @@ public class CacheScan {
     }
 
     private String[] exec(String target) {
-        String data = "";
+        StringBuilder data = new StringBuilder();
         try {
             java.lang.Process p = null;
-            String command = target; //还没进内存
             //Log.d(TAG,"TTTTTTTTTTTT"+command);
-            p = Runtime.getRuntime().exec(command);
+            p = Runtime.getRuntime().exec(target);
             BufferedReader ie = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String error = null;
             while ((error = ie.readLine()) != null
                     && !error.equals("null")) {
-                data += error + "\n";
+                data.append(error).append("\n");
             }
             String line = null;
             while ((line = in.readLine()) != null
                     && !line.equals("null")) {
-                data += line + "\n";
+                data.append(line).append("\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Log.d(TAG, data);
-        return data.split(" ");
+        Log.d(TAG, data.toString());
+        return data.toString().split(" ");
     }
 
     public static native int[] CacheCheck();

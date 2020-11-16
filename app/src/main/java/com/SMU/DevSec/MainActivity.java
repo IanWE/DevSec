@@ -45,13 +45,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
 //import org.pytorch.Module;
-
-
 //public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 public class MainActivity extends AppCompatActivity {
     private List<AppInfo> appInfo;
@@ -61,8 +60,6 @@ public class MainActivity extends AppCompatActivity {
     public static HashMap<String, String> pkg_name = new HashMap<>();
     public static HashMap<String, Integer> pkg_permission = new HashMap<>();
     private String packageName;
-    static EditText jobStatus;
-    private String DATABASE_PATH;
     private final String DATABASE_FILENAME = "SideScan.db";
     CrashHandler crashHandler = CrashHandler.getInstance();
     private static final int ready = 0;
@@ -80,9 +77,9 @@ public class MainActivity extends AppCompatActivity {
     static boolean collect_only = true;
     Intent intent;
     static boolean check = false;
-    static Switch mSwitch;
+    static Switch[] mSwitch = {null};//there will be a memory leak warning if we do not use list
+    static EditText[] jobStatus = {null};
     private static Toast toast;
-    private ItemsCheck itemsCheck;
     private PermissionRequire permissionRequire;
     private Button buttoninc,buttondec;
     public static final int SIZE_LIMIT = 10;
@@ -101,6 +98,11 @@ public class MainActivity extends AppCompatActivity {
     static CacheScan cs=null;
     static int stage = 0;
 
+    public static ArrayList<SideChannelValue> sideChannelValues = new ArrayList<>();
+    public static ArrayList<GroundTruthValue> groundTruthValues = new ArrayList<>();
+    public static ArrayList<UserFeedback> userFeedbacks = new ArrayList<>();
+    public static ArrayList<CompilerValue> compilerValues = new ArrayList<>();
+    public static ArrayList<FrontAppValue> frontAppValues = new ArrayList<>();
     static {
         System.loadLibrary("native-lib"); //jni lib to use libflush
     }
@@ -127,13 +129,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         //Log.d("xxxxxxxxxxxxxxxxxxxxxx",Utils.getVersionName(getBaseContext()));//get version
-        itemsCheck = new ItemsCheck(MainActivity.this);
+        ItemsCheck itemsCheck = new ItemsCheck(MainActivity.this);
         if(!itemsCheck.isAgreed())
             itemsCheck.startDialog();
         // Initialize database
         initializeDB();
         getAllAppInfos();
-        DATABASE_PATH =  getBaseContext().getFilesDir().getPath()+"databases/";
+        //String DATABASE_PATH = getBaseContext().getFilesDir().getPath() + "databases/";
         // Loading model
         /*
         try {
@@ -143,8 +145,8 @@ public class MainActivity extends AppCompatActivity {
         }
         */
         //Switch
-        mSwitch = (Switch) findViewById(R.id.btn_schedule_job);
-        jobStatus = (EditText) findViewById(R.id.job_status);
+        mSwitch[0] = (Switch) findViewById(R.id.btn_schedule_job);
+        jobStatus[0] = (EditText) findViewById(R.id.job_status);
 
         SharedPreferences edit = getSharedPreferences("user", 0);
         final String name = edit.getString("RSA", "None");
@@ -155,43 +157,43 @@ public class MainActivity extends AppCompatActivity {
         //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxx"+trial);
         if(check){//every time enter the app, check the running status.
             if(!SideChannelJob.continueRun) {
-                mSwitch.setChecked(false);
+                mSwitch[0].setChecked(false);
                 checkRunStatus(SideChannelJob.continueRun);
             }
             else {
-                mSwitch.setChecked(true);
+                mSwitch[0].setChecked(true);
                 checkRunStatus(SideChannelJob.continueRun);
                 CacheScan.ischeckedaddr = false;
             }
         }
 
-        if (name.equals("None")) {
+        if (name!=null&&name.equals("None")) {
             Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
                     .show();
             intent = new Intent(MainActivity.this, Register.class);
             startActivity(intent);//start register page
-            mSwitch.setChecked(false);
+            mSwitch[0].setChecked(false);
         }
 
         // 添加监听 scheduleJob cancelJob
-        mSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mSwitch[0].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     SharedPreferences edit = getSharedPreferences("user", 0);
                     String name = edit.getString("RSA", "None");
-                    if (name.equals("None")) {
+                    if (name!=null&&name.equals("None")) {
                         Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
                                 .show();
                         intent = new Intent(MainActivity.this, Register.class);
                         startActivity(intent);//start register page
-                        mSwitch.setChecked(false);
+                        mSwitch[0].setChecked(false);
                     } else
                         scheduleJob(buttonView);
                 } else {
                     boolean d = cancelJob(buttonView);
                     if(!d){
-                        mSwitch.setChecked(true);
+                        mSwitch[0].setChecked(true);
                     }
                 }
             }
@@ -237,14 +239,16 @@ public class MainActivity extends AppCompatActivity {
         if(trial.equals("1")) {
             TimerManager.getInstance().schedule_upload(getBaseContext());
             //TimerManager.getInstance(getBaseContext()).schedule();
-            mSwitch.setChecked(true);
+            mSwitch[0].setChecked(true);
         }
+        Log.d(TAG,"2222222222222222222222222222222");
     }
 
     public void onResume() {
         super.onResume();
         SharedPreferences edit = getSharedPreferences("user", 0);
         final String name = edit.getString("RSA", "None");
+        Log.d(TAG,"1111111111111111111111111111111111111111111111");
         //final boolean conducted = edit.getBoolean("Conducted",false);
         //check permisson
         permissionRequire = new PermissionRequire(MainActivity.this);
@@ -258,14 +262,14 @@ public class MainActivity extends AppCompatActivity {
                 }
         }
         granted = mode == AppOpsManager.MODE_ALLOWED;
-        if(granted&&!name.equals("None")&&!trial.equals("1")) {
+        if(granted&&name!=null&&!name.equals("None")&&!trial.equals("1")) {
             intent = new Intent(MainActivity.this, TrialModel.class);
             startActivity(intent);
         }
-        if(granted&&!name.equals("None")&&trial.equals("1")) {
+        if(granted&&name!=null&&!name.equals("None")&&trial.equals("1")) {
             if(!SideChannelJob.continueRun)
                 TimerManager.getInstance().schedule_upload(getBaseContext());
-                mSwitch.setChecked(true);
+                mSwitch[0].setChecked(true);
         }
     }
 
@@ -411,12 +415,12 @@ public class MainActivity extends AppCompatActivity {
      */
     public static void checkRunStatus(boolean isRunning) {
         if (isRunning) {
-            jobStatus.setText("Stop Detection");
+            jobStatus[0].setText("Stop Detection");
         } else {
             SpannableString spanString = new SpannableString("Start Detection!!!");
             ForegroundColorSpan span = new ForegroundColorSpan(Color.RED);
             spanString.setSpan(span, 15, 18, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-            jobStatus.setText(spanString);
+            jobStatus[0].setText(spanString);
         }
     }
 
@@ -532,7 +536,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static native int isrunning();
 /*
     public void onClick(View v) {
         if(!check){

@@ -40,6 +40,7 @@ import static com.SMU.DevSec.MainActivity.cs;
 import static com.SMU.DevSec.MainActivity.infering;
 import static com.SMU.DevSec.MainActivity.lastday;
 import static com.SMU.DevSec.MainActivity.day;
+import static com.SMU.DevSec.MainActivity.sideChannelValues;
 import static com.SMU.DevSec.MainActivity.stage;
 import static com.SMU.DevSec.MainActivity.trial;
 import static com.SMU.DevSec.MainActivity.uploaded;
@@ -48,11 +49,6 @@ public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
     private static final String TAG = "JobService";
     private static int label=0;
-    public static ArrayList<SideChannelValue> sideChannelValues = new ArrayList<>();
-    public static ArrayList<GroundTruthValue> groundTruthValues = new ArrayList<>();
-    public static ArrayList<UserFeedback> userFeedbacks = new ArrayList<>();
-    public static ArrayList<CompilerValue> compilerValues = new ArrayList<>();
-    public static ArrayList<FrontAppValue> frontAppValues = new ArrayList<>();
     static int[] pattern_filter = null;
     int scValueCount = 1;
     int index = 1;
@@ -63,20 +59,18 @@ public class SideChannelJob extends Service {
     static Lock locker = new ReentrantLock();
     long start_time = 0;
     boolean datacollecting = false;
-    Thread thread_collect;
-    Thread thread_notify;
+    Thread thread_collect = null;
+    Thread thread_notify = null;
     /**
      *通过通知启动服务
      */
     @TargetApi(Build.VERSION_CODES.N)
     public void setForegroundService()
     {
-        //设定的通知渠道名称
-        String channelName = CHANNEL_ID;
         //设置通知的重要程度
         int importance = NotificationManager.IMPORTANCE_LOW;
         //构建通知渠道
-        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, channelName, importance);
+        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID, importance);
         Intent intent;
         channel.setDescription(description);
         if(trial==null) {
@@ -110,6 +104,7 @@ public class SideChannelJob extends Service {
         //int pid = android.os.Process.myPid(); //get the self pid
         Log.d(TAG, "Job started");
         //Toast.makeText(this, "Started Data Collection", Toast.LENGTH_SHORT).show();
+        //if(thread_notify==null&&thread_collect==null)
         doBackgroundWork();
         start_time = System.currentTimeMillis();
         Toast.makeText(this, "Job scheduled successfully", Toast.LENGTH_SHORT)
@@ -125,6 +120,7 @@ public class SideChannelJob extends Service {
         thread_collect = new Thread(new Runnable() {
             @Override
             public void run() {
+                /*
                 while(datacollecting) {
                     Log.d(TAG,"The data collection thread is still running, wait until it stop");
                     try {
@@ -133,6 +129,7 @@ public class SideChannelJob extends Service {
                         e.printStackTrace();
                     }
                 }
+                 */
                 // Initializing primitives and objects
                 int count = 0;
                 StorageManager storageManager =
@@ -302,7 +299,7 @@ public class SideChannelJob extends Service {
                 public void run() {
                     try {
                         while(cs==null) {
-                            Thread.sleep(1000);
+                            Thread.sleep(100);
                         }
                         while (continueRun) {
                             Thread.sleep(1000);
@@ -395,6 +392,7 @@ public class SideChannelJob extends Service {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            thread_collect = null;
         }
         if(thread_notify!=null) {
             try {
@@ -403,8 +401,8 @@ public class SideChannelJob extends Service {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            thread_notify = null;
         }
-
         Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
                 .show();
     }
