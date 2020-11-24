@@ -77,8 +77,8 @@ public class CacheScan {
     private ArrayList<int[]> ALpattern = new ArrayList<int[]>();
     private int[] thresholdforpattern = {10,10};//number of different functions
     private String[] BehaviorList = {"Information", "Camera", "AudioRecorder", "Location"};
-    private double audio_threshold_level = 0.25;
-    private double camera_threshold_level = 0.25;
+    private double audio_threshold_level = 0.2;
+    private double camera_threshold_level = 0.2;
     private int[] cleanpattern = {0,0};
     private String AppStringforcheck = "";
     private long firsthit = 0;
@@ -168,8 +168,6 @@ public class CacheScan {
             //thresholdforpattern[i] = Utils.sum(ALpattern.get(i));
         //    thresholdforpattern[i] = ALpattern.get(i).length;
         //}
-        thresholdforpattern[0] = 10;
-        thresholdforpattern[1] = 10;
         init(dexlist, filenames, func_lists);//initiate the JNI function
         //ResetThreshold();
         //if(thresholdforpattern[0]<10)
@@ -440,13 +438,15 @@ public class CacheScan {
             Log.d(TAG,"Set the dismiss true to ignore the first notification");
         }
         int count = 1;
+
         // if it is the same application, but 5 seconds has passed over, set the count to 3. (a user shutdown and reopen an app to activate functions.)
-        if(app.equals(preapp)&&!dismiss&&System.currentTimeMillis()-setfalse>30000){
+        if(app.equals(preapp)&&!dismiss&&System.currentTimeMillis()-setfalse>600000){
             Log.d(TAG,"Set dismiss true");
             dismiss = true;
             exceedtime = true;
             firsthit = System.currentTimeMillis();
         }
+
         //if some functions are not activated, close the dismiss after 4 seconds
         if(!exceedtime&&dismiss&&System.currentTimeMillis()-firsthit>5000){
             dismiss = false;
@@ -476,6 +476,11 @@ public class CacheScan {
                 int[] addrs = addr();//get the addresses
                 for (int i = 0; i < length; i++) {
                     unparsedaddr(addrs[i], i);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
                 ischeckedaddr = true;
                 thresholdforpattern = GetT();

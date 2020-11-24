@@ -67,8 +67,7 @@ public class BasicInfo {
     }
 
     public static String getBasicInfo(){
-        String basicinfo = getSystemModel()+" "+getSystemVersion()+" "+getDeviceBrand()+" "+getCpuName()+"\n";
-        return basicinfo;
+        return " SystemModel:"+getSystemModel()+" Android Version:"+getSystemVersion()+" DeviceBrand:"+getDeviceBrand()+" Cpu:"+getCpuName();
     }
 
     /**

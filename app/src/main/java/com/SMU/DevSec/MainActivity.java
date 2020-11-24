@@ -340,8 +340,6 @@ public class MainActivity extends AppCompatActivity {
     protected void getAllAppInfos() {
         if(pkg_permission!=null&&!pkg_permission.isEmpty())
             return;
-        //List<AppInfo> list = new ArrayList<AppInfo>();
-        // 得到应用的packgeManager
         final PackageManager packageManager = getPackageManager();
         //创建一个主界面的intent
         Intent intent = new Intent();

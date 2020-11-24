@@ -172,6 +172,7 @@ ReadOffset(JNIEnv *env, std::string dexlist, size_t *addr, char **funcs, size_t 
     if((access(filename.c_str(),F_OK))==-1)
     {
         LOGD("Filename %s do not exists",filename.c_str());
+
         for(int i=0;i<length;i++){
             addr[current_length++] = 0;
         }

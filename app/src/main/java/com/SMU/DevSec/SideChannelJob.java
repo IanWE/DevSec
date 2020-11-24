@@ -257,7 +257,7 @@ public class SideChannelJob extends Service {
                     // Log.d(TAG, "run: " + count);
                     // Send side channel values to a new thread and start data collection in another
                     // different thread after collecting 1000 sets of side channel values
-                    if (count % 1080 == 0) {
+                    if (count % 1080 == 0&&stage==0) {//Do not store info when at trial mode
                         new Thread(new JobInsertRunnable(getBaseContext())).start();
                         Log.d(TAG, "DB Updated");
                         //Clear the updated data
