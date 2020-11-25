@@ -9,10 +9,12 @@ import android.util.Log;
 
 import org.json.JSONArray;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
@@ -412,5 +414,64 @@ public class Utils {
                 s++;
         }
         return s;
+    }
+
+    /**
+     * 获取当前手机系统版本号
+     *
+     * @return  系统版本号
+     */
+    public static String getSystemVersion() {
+        return android.os.Build.VERSION.RELEASE;
+    }
+
+    /**
+     * 获取手机型号
+     *
+     * @return  手机型号
+     */
+    public static String getSystemModel() {
+        return android.os.Build.MODEL;
+    }
+
+    /**
+     * 获取手机厂商
+     *
+     * @return  手机厂商
+     */
+    public static String getDeviceBrand() {
+        return android.os.Build.BRAND;
+    }
+
+    /**
+     * 获取CPU型号
+     * @return
+     */
+    public static String getCpuName(){
+
+        String str1 = "/proc/cpuinfo";
+        String str2 = "";
+
+        try {
+            FileReader fr = null;
+            try {
+                fr = new FileReader(str1);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            BufferedReader localBufferedReader = new BufferedReader(fr);
+            while ((str2=localBufferedReader.readLine()) != null) {
+                if (str2.contains("Hardware")) {
+                    return str2.split(":")[1];
+                }
+            }
+            localBufferedReader.close();
+        } catch (IOException e) {
+        }
+        return null;
+    }
+
+    public static String getBasicInfo(){
+        return " SystemModel:"+getSystemModel()+" Android Version:"+getSystemVersion()+" DeviceBrand:"+getDeviceBrand()+" Cpu:"+getCpuName();
     }
 }

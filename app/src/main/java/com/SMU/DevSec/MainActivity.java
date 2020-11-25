@@ -28,7 +28,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -38,6 +37,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import org.pytorch.Module;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,137 +47,66 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-//import org.pytorch.Module;
-//public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 public class MainActivity extends AppCompatActivity {
-    private List<AppInfo> appInfo;
-    public static final String NAME = "DevSec";
     public static final String TAG = "DevSec";
     private static final int PERMISSIONS_REQUEST = 0;
-    public static HashMap<String, String> pkg_name = new HashMap<>();
-    public static HashMap<String, Integer> pkg_permission = new HashMap<>();
-    private String packageName;
-    private final String DATABASE_FILENAME = "SideScan.db";
     CrashHandler crashHandler = CrashHandler.getInstance();
-    private static final int ready = 0;
-    public static String previous_name = "";
-    //static Module module = null;
     static boolean infering = true;
     static int camera = 0;
     static int audio = 0;
-    //static int sms = 0;
+    static int sms = 0;
     static int location = 0;
-    //static int contact = 0;
-    static int quering = 0;
+    static int contact = 0;
+    static int calendar = 0;
     static TextView[] status = new TextView[6];
     static boolean uploaded = false;
-    static boolean collect_only = true;
-    Intent intent;
-    static boolean check = false;
-    static Switch[] mSwitch = {null};//there will be a memory leak warning if we do not use list
-    static EditText[] jobStatus = {null};
-    private static Toast toast;
-    private PermissionRequire permissionRequire;
-    private Button buttoninc,buttondec;
-    public static final int SIZE_LIMIT = 10;
-    public static final int TIME_INTERVAL = 5;
-    public static boolean isCollected = false;//whether got data
-    static String trial;
+    static boolean collect_only = true;//Here to set whether launch Deep Learning Model
+    Switch mSwitch = null;
+    EditText jobStatus = null;
     static long lastday = 0;
     static long day = 1;
-    ImageView imageView;
-    Dialog imgdialog;
-    ImageView image;
-    static volatile int[] filter={0,0,0,0,0,0,0}; //0 query, 1 camera, 2 location, 3 audio, 4 audio, 5 meizu audio, 6 camera,
-    boolean filter_check = false;
-    static int count_threshold = 1;
-    static int preset_threshold = 0;
-    static CacheScan cs=null;
     static int stage = 0;
-
     public static ArrayList<SideChannelValue> sideChannelValues = new ArrayList<>();
-    public static ArrayList<GroundTruthValue> groundTruthValues = new ArrayList<>();
-    public static ArrayList<UserFeedback> userFeedbacks = new ArrayList<>();
-    public static ArrayList<CompilerValue> compilerValues = new ArrayList<>();
-    public static ArrayList<FrontAppValue> frontAppValues = new ArrayList<>();
-    static {
-        System.loadLibrary("native-lib"); //jni lib to use libflush
-    }
+    static Module module;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         crashHandler.init(MainActivity.this);//register crashhandler
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_backup);
-        toast = Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT);
-        permissionRequire = new PermissionRequire(MainActivity.this);
-        AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-        int mode = 0;
-        if (appOps != null) {
-            {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    mode = appOps.unsafeCheckOpNoThrow("android:get_usage_stats",
-                            Process.myUid(), getPackageName());
-                }
-            }
-            boolean granted = mode == AppOpsManager.MODE_ALLOWED;
-            if (!granted) {
-                permissionRequire.startDialog();
-            }
-        }
-        //Log.d("xxxxxxxxxxxxxxxxxxxxxx",Utils.getVersionName(getBaseContext()));//get version
-        ItemsCheck itemsCheck = new ItemsCheck(MainActivity.this);
-        if(!itemsCheck.isAgreed())
-            itemsCheck.startDialog();
-        // Initialize database
+        setContentView(R.layout.activity_main);
         initializeDB();
-        getAllAppInfos();
-        //String DATABASE_PATH = getBaseContext().getFilesDir().getPath() + "databases/";
         // Loading model
-        /*
         try {
             module = Module.load(assetFilePath(this, "model.pt"));
         } catch (IOException e) {
             Log.e("Pytorch", "Error reading assets", e);
         }
-        */
         //Switch
-        mSwitch[0] = (Switch) findViewById(R.id.btn_schedule_job);
-        jobStatus[0] = (EditText) findViewById(R.id.job_status);
-
-        SharedPreferences edit = getSharedPreferences("user", 0);
-        final String name = edit.getString("RSA", "None");
-        trial = edit.getString("trialmodel", "0");//
-        lastday = edit.getLong("lastday",0);
-        day = edit.getLong("day",1);
-        //trial = "1";
-        //Log.d(TAG,"xxxxxxxxxxxxxxxxxxxxxx"+trial);
-        if(check){//every time enter the app, check the running status.
-            if(!SideChannelJob.continueRun) {
-                mSwitch[0].setChecked(false);
-                checkRunStatus(SideChannelJob.continueRun);
-            }
-            else {
-                mSwitch[0].setChecked(true);
-                checkRunStatus(SideChannelJob.continueRun);
-                CacheScan.ischeckedaddr = false;
-            }
+        mSwitch = (Switch) findViewById(R.id.btn_schedule_job);
+        jobStatus = (EditText) findViewById(R.id.job_status);
+        if(!SideChannelJob.continueRun) {
+            mSwitch.setChecked(false);
+            checkRunStatus(SideChannelJob.continueRun);
+        }
+        else {
+            mSwitch.setChecked(true);
+            checkRunStatus(SideChannelJob.continueRun);
         }
 
+        SharedPreferences edit = getSharedPreferences("user", 0);
+        String name = edit.getString("RSA","None");
         if (name!=null&&name.equals("None")) {
             Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
                     .show();
-            intent = new Intent(MainActivity.this, Register.class);
+            Intent intent = new Intent(MainActivity.this, Register.class);
             startActivity(intent);//start register page
-            mSwitch[0].setChecked(false);
+            mSwitch.setChecked(false);
         }
-
         // 添加监听 scheduleJob cancelJob
-        mSwitch[0].setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
@@ -185,225 +115,27 @@ public class MainActivity extends AppCompatActivity {
                     if (name!=null&&name.equals("None")) {
                         Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
                                 .show();
-                        intent = new Intent(MainActivity.this, Register.class);
+                        Intent intent = new Intent(MainActivity.this, Register.class);
                         startActivity(intent);//start register page
-                        mSwitch[0].setChecked(false);
+                        mSwitch.setChecked(false);
                     } else
                         scheduleJob(buttonView);
                 } else {
                     boolean d = cancelJob(buttonView);
-                    if(!d){
-                        mSwitch[0].setChecked(true);
-                    }
                 }
             }
         });
-        status[0] = findViewById(R.id.query);
+        status[0] = findViewById(R.id.sms);
         status[1] = findViewById(R.id.camera);
         status[2] = findViewById(R.id.audio);
         status[3] = findViewById(R.id.location);
-        status[4] = findViewById(R.id.notification);
-        status[5] = findViewById(R.id.dayx);
-
-        createNotificationChannel(); //register channel
-        //mannually adjust the threshold
-        //buttoninc = (Button) findViewById(R.id.increase);
-        //buttondec = (Button) findViewById(R.id.decrease);
-        //buttoninc.setOnClickListener(this);
-        //buttondec.setOnClickListener(this);
-        //image event
-        imageView = (ImageView) findViewById(R.id.example);
-        //展示在dialog上面的大图
-        imgdialog = new Dialog(MainActivity.this,R.style.FullActivity);
-        WindowManager.LayoutParams attributes = getWindow().getAttributes();
-        attributes.width = WindowManager.LayoutParams.MATCH_PARENT;
-        attributes.height = WindowManager.LayoutParams.MATCH_PARENT;
-        imgdialog.getWindow().setAttributes(attributes);
-        image = getImageView();
-        imgdialog.setContentView(image);
-        //大图的点击事件（点击让他消失）
-        image.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imgdialog.dismiss();
-            }
-        });
-        imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imgdialog.show();
-            }
-        });
-        //start
-
-        if(trial.equals("1")) {
-            TimerManager.getInstance().schedule_upload(getBaseContext());
-            //TimerManager.getInstance(getBaseContext()).schedule();
-            mSwitch[0].setChecked(true);
-        }
-        Log.d(TAG,"2222222222222222222222222222222");
+        status[4] = findViewById(R.id.callhistory);
+        status[5] = findViewById(R.id.calendar);
+        //createNotificationChannel(); //register channel
     }
 
     public void onResume() {
         super.onResume();
-        SharedPreferences edit = getSharedPreferences("user", 0);
-        final String name = edit.getString("RSA", "None");
-        Log.d(TAG,"1111111111111111111111111111111111111111111111");
-        //final boolean conducted = edit.getBoolean("Conducted",false);
-        //check permisson
-        permissionRequire = new PermissionRequire(MainActivity.this);
-        AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-        int mode = 0;
-        boolean granted;//=false;
-        if (appOps != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    mode = appOps.unsafeCheckOpNoThrow("android:get_usage_stats",
-                            Process.myUid(), getPackageName());
-                }
-        }
-        granted = mode == AppOpsManager.MODE_ALLOWED;
-        if(granted&&name!=null&&!name.equals("None")&&!trial.equals("1")) {
-            intent = new Intent(MainActivity.this, TrialModel.class);
-            startActivity(intent);
-        }
-        if(granted&&name!=null&&!name.equals("None")&&trial.equals("1")) {
-            if(!SideChannelJob.continueRun)
-                TimerManager.getInstance().schedule_upload(getBaseContext());
-                mSwitch[0].setChecked(true);
-        }
-    }
-
-    //动态的ImageView
-    private ImageView getImageView(){
-        ImageView imageView = new ImageView(this);
-        //宽高
-        imageView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        //imageView设置图片
-        @SuppressLint("ResourceType") InputStream is = getResources().openRawResource(R.drawable.example);
-        Drawable drawable = BitmapDrawable.createFromStream(is, null);
-        imageView.setImageDrawable(drawable);
-        return imageView;
-    }
-
-    public static void showToast(String message, int time) {
-        //一般不需要做非空判断，除非APP被篡改过
-        if (toast != null) {
-            toast.setText(message);
-            //设置显示时长
-            toast.setDuration(time);
-            toast.show();
-        }
-    }
-
-    private void createNotificationChannel() {
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        CharSequence name = getString(R.string.notification_channel_name);
-        String description = "Notification for captured behaviours";
-        int importance = NotificationManager.IMPORTANCE_HIGH;
-        NotificationChannel channel = new NotificationChannel("behaviour capture", name, importance);
-        channel.setDescription(description);
-        // Register the channel with the system; you can't change the importance
-        // or other notification behaviors after this
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        notificationManager.createNotificationChannel(channel);
-    }
-
-    private String[] exec(String target) {
-        StringBuilder data = new StringBuilder();
-        try {
-            java.lang.Process p = null;
-            //Log.d(TAG,"TTTTTTTTTTTT"+command);
-            p = Runtime.getRuntime().exec(target);
-            BufferedReader ie = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String error = null;
-            while ((error = ie.readLine()) != null
-                    && !error.equals("null")) {
-                data.append(error).append("\n");
-            }
-            String line = null;
-            while ((line = in.readLine()) != null
-                    && !line.equals("null")) {
-                data.append(line).append("\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        Log.d(TAG, data.toString());
-        return data.toString().split(" ");
-    }
-    /*
-     * 得到手机中所有应用信息的列表
-     * AppInfo
-     */
-    protected void getAllAppInfos() {
-        if(pkg_permission!=null&&!pkg_permission.isEmpty())
-            return;
-        final PackageManager packageManager = getPackageManager();
-        //创建一个主界面的intent
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        // 得到包含应用信息的列表
-        List<ResolveInfo> ResolveInfos = packageManager.queryIntentActivities(
-                intent, 0);
-        final PackageManager pm = getPackageManager();
-        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
-        //遍历
-        for (ResolveInfo ri : ResolveInfos) {
-            String path = null;
-            // 得到包名
-            String packageName = ri.activityInfo.packageName;
-            // 得到应用名称
-            String appName = ri.loadLabel(packageManager).toString();
-            pkg_name.put(packageName,appName);
-            pkg_permission.put(appName,read_permissons(packageName));
-        }
-    }
-
-    // Get Apps' permission
-    public int read_permissons(String packageName) {
-        int[] judge = {0, 0};
-        int type = 0;
-        PackageManager pm = getPackageManager();
-        PackageInfo info;
-        try {
-            int pmnumber = 0;
-            boolean flag = (PackageManager.PERMISSION_GRANTED ==
-                    pm.checkPermission("android.permission.RECORD_AUDIO", packageName));
-            if(flag)
-                type+=2;
-            flag = (PackageManager.PERMISSION_GRANTED ==
-                    pm.checkPermission("android.permission.CAMERA", packageName));
-            if(flag)
-                type+=1;
-            //Log.d("xxxxxxxxxxx",packageName+" "+type);
-            return type;
-            } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return 0;
-    }
-
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        Log.d(TAG, "RequestPermission");
-        if (PERMISSIONS_REQUEST != requestCode) {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-            return;
-        }
-
-        boolean areAllPermissionsGranted = true;
-        for (int result : grantResults) {
-            if (result != PackageManager.PERMISSION_GRANTED) {
-                areAllPermissionsGranted = false;
-                Log.d(TAG, "Not All Permission");
-                break;
-            }
-        }
-        if (areAllPermissionsGranted) {
-            Log.d(TAG, "onRequestPermissionsResult: Required permissions granted");
-        }
     }
 
     /**
@@ -411,14 +143,14 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param isRunning: flag to indicate if the job scheduler is running
      */
-    public static void checkRunStatus(boolean isRunning) {
+    public void checkRunStatus(boolean isRunning) {
         if (isRunning) {
-            jobStatus[0].setText("Stop Detection");
+            jobStatus.setText("Stop Detection");
         } else {
             SpannableString spanString = new SpannableString("Start Detection!!!");
             ForegroundColorSpan span = new ForegroundColorSpan(Color.RED);
             spanString.setSpan(span, 15, 18, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-            jobStatus[0].setText(spanString);
+            jobStatus.setText(spanString);
         }
     }
 
@@ -432,7 +164,6 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, "Job is scheduling", Toast.LENGTH_SHORT)
                 .show();
     }
-
     /**
      * Method to stop the job scheduler
      *
@@ -440,11 +171,6 @@ public class MainActivity extends AppCompatActivity {
      */
     public boolean cancelJob(View v) {
         Intent stop=new Intent (this,SideChannelJob.class);
-        if(!check) {
-            Toast.makeText(this, "Please try it later.", Toast.LENGTH_SHORT)
-                    .show();
-            return false;
-        }
         stopService(stop);
         SideChannelJob.continueRun = false;
         checkRunStatus(SideChannelJob.continueRun);
@@ -487,32 +213,6 @@ public class MainActivity extends AppCompatActivity {
                 SideChannelContract.Columns.SYSTEM_TIME + " INTEGER NOT NULL, " +
                 SideChannelContract.Columns.LABELS + " INTEGER); ";
         db.execSQL(sSQL);
-
-        sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.USER_FEEDBACK+ " (" +
-                SideChannelContract.Columns.ARISINGTIME + " INTEGER NOT NULL, " +
-                SideChannelContract.Columns.EVENT + " INTEGER, "+
-                SideChannelContract.Columns.CURRENT_APP + " INTEGER, "+
-                SideChannelContract.Columns.ANSWERINGTIME + " INTEGER, "+
-                SideChannelContract.Columns.CHOICES + " INTEGER, "+
-                SideChannelContract.Columns.PATTERN + " INTEGER); ";
-        db.execSQL(sSQL);
-
-        sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.SIDE_COMPILER+ " (" +
-                SideChannelContract.Columns.SYSTEM_TIME + " INTEGER NOT NULL, " +
-                SideChannelContract.Columns.THRESHOLDS + " INTEGER," +
-                SideChannelContract.Columns.FUNCTIONS + " INTEGER); ";
-        db.execSQL(sSQL);
-
-        sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.FRONT_APP+ " (" +
-                SideChannelContract.Columns.SYSTEM_TIME + " INTEGER NOT NULL, " +
-                SideChannelContract.Columns.CURRENT_APP + " TEXT); ";
-        db.execSQL(sSQL);
-
-        String V = "Version"+Utils.getVersionName(getBaseContext());
-        sSQL = "CREATE TABLE IF NOT EXISTS " + V +  " (" +
-                SideChannelContract.Columns.SYSTEM_TIME + " )";//1600592322078 1600591910848
-        db.execSQL(sSQL);
-        db.close();
     }
 
     public static String assetFilePath(Context context, String assetName) throws IOException {
@@ -529,32 +229,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 os.flush();
             }
-            //file.setExecutable(true);
             return file.getAbsolutePath();
         }
     }
-
-/*
-    public void onClick(View v) {
-        if(!check){
-            showToast("Try it after starting",0);
-            return;
-        }
-        switch (v.getId()) {
-            case R.id.increase:
-                increase();
-                CacheScan.unparsedaddr();
-                Log.d(TAG,"Increase the threshold");
-                break;
-            case R.id.decrease:
-                decrease();
-                CacheScan.unparsedaddr();
-                Log.d(TAG,"Decrease the threshold");
-                break;
-            default:
-                break;
-        }
-    }
- */
 }
 

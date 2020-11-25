@@ -37,19 +37,11 @@
         <activity
             android:name=".Register"
             android:launchMode="singleTask" /> <!-- <receiver android:name=".AlarmReceiver"> -->
-        <activity
-            android:name=".TrialModel"
-            android:launchMode="singleTask" />
-        <activity android:name=".AfterTrialModel"
-            android:launchMode="singleTask"/>
-        <activity android:name=".RestartTest"
-            android:launchMode="singleTask"/>
 
         <service
             android:name=".SideChannelJob"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
-        <receiver android:name = ".NotificationClickReceiver"></receiver>
     </application>
 
 </manifest>

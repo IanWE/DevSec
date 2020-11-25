@@ -1,3 +1,0 @@
-/projects/oat-parser/CMakeFiles/rebuild_cache.dir
-/projects/oat-parser/CMakeFiles/oatparser.dir
-/projects/oat-parser/CMakeFiles/edit_cache.dir

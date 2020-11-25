@@ -31,19 +31,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-import static com.SMU.DevSec.CacheScan.answered;
-import static com.SMU.DevSec.CacheScan.notification;
-import static com.SMU.DevSec.CacheScan.notifying;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.MainActivity.collect_only;
-import static com.SMU.DevSec.MainActivity.cs;
 import static com.SMU.DevSec.MainActivity.infering;
 import static com.SMU.DevSec.MainActivity.lastday;
 import static com.SMU.DevSec.MainActivity.day;
 import static com.SMU.DevSec.MainActivity.sideChannelValues;
 import static com.SMU.DevSec.MainActivity.stage;
-import static com.SMU.DevSec.MainActivity.trial;
-import static com.SMU.DevSec.MainActivity.uploaded;
 
 public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
@@ -60,7 +54,6 @@ public class SideChannelJob extends Service {
     long start_time = 0;
     boolean datacollecting = false;
     Thread thread_collect = null;
-    Thread thread_notify = null;
     /**
      *通过通知启动服务
      */
@@ -73,16 +66,8 @@ public class SideChannelJob extends Service {
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID, importance);
         Intent intent;
         channel.setDescription(description);
-        if(trial==null) {
-            SharedPreferences edit = getSharedPreferences("user", 0);
-            trial = edit.getString("trialmodel", "0");//
-        }
-        if(trial.equals("1"))
-            intent = new Intent(this, MainActivity.class);
-        else
-            intent = new Intent(this, TrialModel.class);
+        intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
         //在创建的通知渠道上发送通知
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
         builder.setSmallIcon(R.mipmap.ic_launcher_foreground) //设置通知图标
@@ -120,17 +105,6 @@ public class SideChannelJob extends Service {
         thread_collect = new Thread(new Runnable() {
             @Override
             public void run() {
-                /*
-                while(datacollecting) {
-                    Log.d(TAG,"The data collection thread is still running, wait until it stop");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                 */
-                // Initializing primitives and objects
                 int count = 0;
                 StorageManager storageManager =
                         (StorageManager) getSystemService(Context.STORAGE_SERVICE);
@@ -138,7 +112,6 @@ public class SideChannelJob extends Service {
                         (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
                 // Loop to collect side channel values via API calls
                 while (continueRun) {
-                    datacollecting = true;
                     try {
                         String[] volumes = (String[]) storageManager.getClass()
                                 .getMethod("getVolumePaths", new Class[0])
@@ -225,20 +198,17 @@ public class SideChannelJob extends Service {
                         // Compute cumulative time to collect 100 sets of side channel values
                         long deltaTime = System.currentTimeMillis() - startTime;
                         cumulativeTime = cumulativeTime + deltaTime;
-                        if (((scValueCount % 60) == 0) && index != 1) {//Do not classiy when there is no sc
+                        if (((scValueCount % 60) == 0) && index != 1) {
                             //Log.d(TAG, String.valueOf(sideChannelValues.subList(index-60,index)));
-                            //Whether use model to infer
-                            if (!collect_only) {
-                                //new Thread(new MonitorFrontEvent(getBaseContext())).start();
-                                if (infering) new Thread(new Classifier(getBaseContext(),
+                            //Whether to start the infering
+                            if (infering)
+                                new Thread(new Classifier(getBaseContext(),
                                         new ArrayList(sideChannelValues.subList(index - 60, index)))).start();
-                            }
                             Log.d(TAG, "API Call Batch Count: " + scValueCount +
                                     ", Cumulative Time (ms): " + cumulativeTime);
                         }
                         scValueCount++;
                         index++;
-
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                         Log.d("debug", "mhy_IllegalAccessException");
@@ -257,7 +227,7 @@ public class SideChannelJob extends Service {
                     // Log.d(TAG, "run: " + count);
                     // Send side channel values to a new thread and start data collection in another
                     // different thread after collecting 1000 sets of side channel values
-                    if (count % 1080 == 0&&stage==0) {//Do not store info when at trial mode
+                    if (count % 1020 == 0) {//Do not store info when at trial mode
                         new Thread(new JobInsertRunnable(getBaseContext())).start();
                         Log.d(TAG, "DB Updated");
                         //Clear the updated data
@@ -267,70 +237,11 @@ public class SideChannelJob extends Service {
                         count = 0;
                     }
                 }//while
-                datacollecting = false;
             }
         });
         thread_collect.start();
-
-        // Start scan
-        if (stage == 0) {
-            // Send the job to a different thread
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    //ClassCreate
-                    try {
-                        if (cs == null) {
-                            cs = new CacheScan(getBaseContext());//放到mainActivity里面去初始化
-                            Log.d(TAG,"Initialize CacheScan");
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    //Start Scaning
-                    if(pattern_filter==null)
-                        pattern_filter = Utils.getArray(getBaseContext(), "ptfilter");
-                    scan(pattern_filter, pattern_filter.length);
-                }
-            }).start();
-
-            thread_notify = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while(cs==null) {
-                            Thread.sleep(100);
-                        }
-                        while (continueRun) {
-                            Thread.sleep(1000);
-                            cs.Notify(getBaseContext());
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            thread_notify.start();
-        }//
-        else{
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    //ClassCreate
-                    try {
-                        if (cs == null)
-                            cs = new CacheScan(getBaseContext());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
-        }//trial
     }
 
-    public native void scan(int[] pattern,int length);
-    public native void trial2();
-    public native void pause();
     /**
      * Method to compute battery level based on API call to BatteryManager
      *
@@ -359,31 +270,6 @@ public class SideChannelJob extends Service {
     @Override
     public void onDestroy(){
         super.onDestroy ();
-        final long minutes = (System.currentTimeMillis()-start_time)/(1000*60);
-        pause();
-        //locker.lock();
-        if(stage==0) {//not in trial mode
-            if(minutes>0) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String r = TimerManager.getInstance().uploadTimeCheck(getBaseContext(), minutes);//
-                        if (r != null && r.equals("1"))
-                            Log.d(TAG, "Running time are uploaded successfully");
-                        else
-                            Log.d(TAG, "Unable to upload the running time");
-                    }
-                }).start();
-            }
-        }
-        //locker.unlock();
-        SharedPreferences edit = getBaseContext().getSharedPreferences("user",0);
-        SharedPreferences.Editor editor = edit.edit();
-        editor.putLong("Answered",answered);//record the numbr of notification
-        editor.putLong("Notification",notification);
-        editor.putLong("lastday",lastday);
-        editor.putLong("day",day);
-        editor.commit();
         continueRun = false;
         //make sure threads are stopped
         if(thread_collect!=null) {
@@ -394,17 +280,6 @@ public class SideChannelJob extends Service {
             }
             thread_collect = null;
         }
-        if(thread_notify!=null) {
-            try {
-                thread_notify.interrupt();
-                thread_notify.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            thread_notify = null;
-        }
-        Toast.makeText(this, "Job cancelled", Toast.LENGTH_SHORT)
-                .show();
     }
 
     @Nullable

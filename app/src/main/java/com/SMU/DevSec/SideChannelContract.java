@@ -35,28 +35,16 @@ public class SideChannelContract {
         //label
         public static final String CURRENT_APP = "Current_App";
         public static final String LABELS = "Labels";
-        //user feedback
-        public static final String CHOICES = "Choices";
-        public static final String ARISINGTIME = "Arisingtime";
-        public static final String ANSWERINGTIME = "Answeringtime";
-        public static final String EVENT = "Event";
-        public static final String ANSWER = "Answer";
-        public static final String PATTERN = "Pattern";
-        //side compiler
-        public static final String FUNCTIONS = "Functions";
-        public static final String THRESHOLDS = "Thresholds";
-
         private Columns() {}
             // private constructor to prevent instantiation
         }
 
         public static String[] CLASSES = new String[]{
-                "QueryInformation",
                 "Camera",
-                //"Calendar",
-                //"ReadSMS",
+                "ReadCalendar",
+                "ReadSMS",
                 "RequestLocation",
                 "AudioRecording",
-                //"ReadContacts"
+                "ReadContacts"
         };
 }
