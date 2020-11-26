@@ -1,9 +1,7 @@
 package com.SMU.DevSec;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-import android.widget.TextView;
 
 import org.pytorch.IValue;
 import org.pytorch.Tensor;
@@ -16,16 +14,12 @@ import static com.SMU.DevSec.SideChannelContract.CLASSES;
 
 class Classifier implements Runnable {
     Context context;
-    TextView prediction;
     ArrayList<SideChannelValue> sideChannelValues;
     long startTime;
-    //ArrayList<Float> X = new ArrayList<Float>(1020);
     final float[] X = new float[1020];
     final long[] shape = new long[]{1,17,60};
 
-    SQLiteDatabase db;
-    private static final String TAG = "PredictRunnable";
-
+    private static final String TAG = "DevSec_PredictRunnable";
     public Classifier(Context context, ArrayList<SideChannelValue> sideChannelValues) {
         this.context = context;
         this.sideChannelValues = sideChannelValues;
@@ -34,7 +28,7 @@ class Classifier implements Runnable {
     public void run() {
         // Start classifying
         startTime = System.currentTimeMillis();
-        for (int i=0;i<60;i++) {
+        for (int i=0;i<60;i++) {//organize data; there are 17 channel of data
             X[i]=(float) sideChannelValues.get(i).getVolume();
             X[1*60+i]=(float) sideChannelValues.get(i).getAllocatableBytes();
             X[2*60+i]=(float) sideChannelValues.get(i).getCacheQuotaBytes();
@@ -54,7 +48,7 @@ class Classifier implements Runnable {
             X[16*60+i]=(float) sideChannelValues.get(i).getTotalRxPackets();
         }
         for(int i=X.length-1;i>=0;i--){
-            if(i % 60!=0) X[i] = X[i]-X[i-1];
+            if(i % 60!=0) X[i] = X[i]-X[i-1];//transfer to increment
             else X[i]=(float) 0;
         }
         final int result = Infer(X);
@@ -63,26 +57,33 @@ class Classifier implements Runnable {
                 @Override
                 public void run() {
                     switch (result) {
-                        case 0:
-                            quering++;
-                            status[result].setText("QueryInformation - " + quering);
-                            break;
                         case 1:
                             camera++;
                             status[result].setText("Camera - " + camera);
                             break;
                         case 2:
-                            audio++;
-                            status[result].setText("AudioRecoding - " + audio);
+                            calendar++;
+                            status[result].setText("ReadCalendar - " + audio);
                             break;
                         case 3:
-                            location++;
-                            status[result].setText("RequestLocation - " + location);
+                            sms++;
+                            status[result].setText("ReadSms - " + sms);
                             break;
                         case 4:
-                            if(lastday!=0)
-                                status[result+1].setText("Day "+day);
-                            status[result].setText("# of Notifications/Answered Today - " + notification + "/" + answered);
+                            contact++;
+                            status[result].setText("ReadContact - " + contact);
+                            break;
+                        case 5:
+                            location++;
+                            status[result].setText("RequestLocation- " + location);
+                            break;
+                        case 6:
+                            calllog++;
+                            status[result].setText("ReadCallLog- " + calllog);
+                            break;
+                        case 7:
+                            audio++;
+                            status[result].setText("AudioRecording - " + audio);
                             break;
                     }
                 }
@@ -109,6 +110,4 @@ class Classifier implements Runnable {
         }
         return maxScoreIdx;
     }
-    ;
-
 }

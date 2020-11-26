@@ -22,23 +22,15 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
-import java.util.zip.CRC32;
-import java.util.zip.CheckedOutputStream;
 import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.SMU.DevSec.MainActivity.SIZE_LIMIT;
-import static com.SMU.DevSec.MainActivity.isCollected;
+import static com.SMU.DevSec.MainActivity.limited_size;
 
 /**
- * @CreateBy HaiyuKing
- * @Used android 获取文件夹或文件的大小 以B、KB、MB、GB 为单位
- * @参考资料 http://blog.csdn.net/jiaruihua_blog/article/details/13622939
+ * Some Utils
  */
 public class Utils {
     public static final int SIZETYPE_B = 1;//获取文件大小单位为B的double值
@@ -46,16 +38,14 @@ public class Utils {
     public static final int SIZETYPE_MB = 3;//获取文件大小单位为MB的double值
     public static final int SIZETYPE_GB = 4;//获取文件大小单位为GB的double值
     private static final String TAG = "Utils";
-    public static final String DATABASE_PATH = "/data/data/com.SMU.DevSec/databases/";
-    private final String FILE_PATH = "/data/data/com.SMU.DevSec/files/";
     public static final String DATABASE_FILENAME = "SideScan.db";
     public static final String TEMP_DATABASE = "TempDatabase.db";
     public static boolean compressing=false;
     /**
-     * 获取指定文件或指定文件夹的的指定单位的大小
-     * @param filePath 文件路径
-     * @param sizeType 获取大小的类型1为B、2为KB、3为MB、4为GB
-     * @return double值的大小
+     * get the size of folder or file
+     * @param filePath path
+     * @param sizeType the returned type,1 is B、2 is KB、3 is MB、4 is GB
+     * @return filesize
      */
     public static double getFolderOrFileSize(String filePath,int sizeType){
         File file=new File(filePath);
@@ -68,13 +58,13 @@ public class Utils {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Log.e("获取文件大小","获取失败!");
+            Log.e(TAG,"Failed to get size");
         }
         return FormetFileSize(blockSize, sizeType);
     }
     /**
      * 调用此方法自动计算指定文件或指定文件夹的大小
-     * @param filePath 文件路径
+     * @param filePath
      * @return 计算好的带B、KB、MB、GB的字符串
      */
     public static String getAutoFolderOrFileSize(String filePath){
@@ -226,7 +216,7 @@ public class Utils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if(size>SIZE_LIMIT){ //copy file
+        if(size>limited_size){ //copy file
             //File dest= new File(DATABASE_PATH+TEMP_DATABASE);
             File dest= mContext.getDatabasePath(TEMP_DATABASE);
             if (dest.exists()) {
@@ -259,7 +249,6 @@ public class Utils {
         if(compressing)
             return;
         compressing = true;
-        isCollected = true;
         File database = mContext.getDatabasePath(TEMP_DATABASE);
         String compressed_filename = getCurTimeLong()/1000+".gz";
         File file = new File(mContext.getFilesDir(),compressed_filename);
@@ -280,10 +269,6 @@ public class Utils {
         Locale locale = new Locale("EN", "SG");
         db.setLocale(locale);
         db.execSQL("delete from " + SideChannelContract.TABLE_NAME);
-        db.execSQL("delete from " + SideChannelContract.GROUND_TRUTH);
-        db.execSQL("delete from " + SideChannelContract.USER_FEEDBACK);
-        db.execSQL("delete from " + SideChannelContract.SIDE_COMPILER);
-        db.execSQL("delete from " + SideChannelContract.FRONT_APP);
         db.close();
         Log.d(TAG, "Reinitialized Database");
     }

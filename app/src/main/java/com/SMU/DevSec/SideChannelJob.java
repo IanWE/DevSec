@@ -6,12 +6,9 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.job.JobParameters;
-import android.app.job.JobService;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.TrafficStats;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -22,47 +19,35 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
-import static com.SMU.DevSec.MainActivity.collect_only;
-import static com.SMU.DevSec.MainActivity.infering;
-import static com.SMU.DevSec.MainActivity.lastday;
-import static com.SMU.DevSec.MainActivity.day;
+import static com.SMU.DevSec.MainActivity.infer_only;
 import static com.SMU.DevSec.MainActivity.sideChannelValues;
-import static com.SMU.DevSec.MainActivity.stage;
 
 public class SideChannelJob extends Service {
     public static volatile boolean continueRun;
-    private static final String TAG = "JobService";
-    private static int label=0;
-    static int[] pattern_filter = null;
+    private static final String TAG = "DevSec_Service";
     int scValueCount = 1;
     int index = 1;
     long cumulativeTime;
-    private String currentFront="DevSec";
-    private static final String CHANNEL_ID = "e.smu.devsec";
+    private static final String CHANNEL_ID = "com.SMU.DevSec";
     private static final String description =  "Collecting Data";
-    static Lock locker = new ReentrantLock();
     long start_time = 0;
-    boolean datacollecting = false;
     Thread thread_collect = null;
-    /**
-     *通过通知启动服务
-     */
+    static Lock insert_locker = new ReentrantLock();
+
+
     @TargetApi(Build.VERSION_CODES.N)
     public void setForegroundService()
     {
-        //设置通知的重要程度
         int importance = NotificationManager.IMPORTANCE_LOW;
-        //构建通知渠道
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID, importance);
         Intent intent;
         channel.setDescription(description);
@@ -88,10 +73,7 @@ public class SideChannelJob extends Service {
     public int onStartCommand(Intent intent,int flags,int startId){
         //int pid = android.os.Process.myPid(); //get the self pid
         Log.d(TAG, "Job started");
-        //Toast.makeText(this, "Started Data Collection", Toast.LENGTH_SHORT).show();
-        //if(thread_notify==null&&thread_collect==null)
         doBackgroundWork();
-        start_time = System.currentTimeMillis();
         Toast.makeText(this, "Job scheduled successfully", Toast.LENGTH_SHORT)
                 .show();
         return super.onStartCommand (intent,flags,startId);
@@ -111,6 +93,7 @@ public class SideChannelJob extends Service {
                 BatteryManager batteryManager =
                         (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
                 // Loop to collect side channel values via API calls
+                sideChannelValues = new ArrayList<>();
                 while (continueRun) {
                     try {
                         String[] volumes = (String[]) storageManager.getClass()
@@ -200,10 +183,9 @@ public class SideChannelJob extends Service {
                         cumulativeTime = cumulativeTime + deltaTime;
                         if (((scValueCount % 60) == 0) && index != 1) {
                             //Log.d(TAG, String.valueOf(sideChannelValues.subList(index-60,index)));
-                            //Whether to start the infering
-                            if (infering)
-                                new Thread(new Classifier(getBaseContext(),
-                                        new ArrayList(sideChannelValues.subList(index - 60, index)))).start();
+                            //infering events
+                            new Thread(new Classifier(getBaseContext(),
+                                    new ArrayList(sideChannelValues.subList(index - 60, index)))).start();
                             Log.d(TAG, "API Call Batch Count: " + scValueCount +
                                     ", Cumulative Time (ms): " + cumulativeTime);
                         }
@@ -227,8 +209,11 @@ public class SideChannelJob extends Service {
                     // Log.d(TAG, "run: " + count);
                     // Send side channel values to a new thread and start data collection in another
                     // different thread after collecting 1000 sets of side channel values
-                    if (count % 1020 == 0) {//Do not store info when at trial mode
-                        new Thread(new JobInsertRunnable(getBaseContext())).start();
+                    if (count % 1020 == 0) {
+                        if(!infer_only)
+                            new Thread(new JobInsertRunnable(getBaseContext())).start();//store the dataset
+                        else
+                            sideChannelValues = new ArrayList<>();
                         Log.d(TAG, "DB Updated");
                         //Clear the updated data
                         index = 1;
@@ -263,10 +248,11 @@ public class SideChannelJob extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("foreground", "onCreate");
+        Log.d(TAG, "onCreate");
         //如果API在26以上即版本为O则调用startForefround()方法启动服务
         setForegroundService();
     }
+
     @Override
     public void onDestroy(){
         super.onDestroy ();
@@ -280,6 +266,10 @@ public class SideChannelJob extends Service {
             }
             thread_collect = null;
         }
+        if(!infer_only)
+            new Thread(new JobInsertRunnable(getBaseContext())).start();//store the dataset
+        else
+            sideChannelValues = new ArrayList<>();
     }
 
     @Nullable

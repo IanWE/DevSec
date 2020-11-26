@@ -1,13 +1,7 @@
 package com.SMU.DevSec;
 
-import android.provider.BaseColumns;
-
 public class SideChannelContract {
     static final String TABLE_NAME = "Side_Channel_Info";
-    static final String GROUND_TRUTH = "Ground_Truth";
-    static final String USER_FEEDBACK = "User_Feedback";
-    static final String SIDE_COMPILER = "Side_Compiler";
-    static final String FRONT_APP = "Front_App";
     /**
      * Static class to return column names for the database
      */
@@ -32,19 +26,18 @@ public class SideChannelContract {
         public static final String TOTAL_RX_BYTES = "Total_Rx_Bytes";
         public static final String MOBILE_RX_PACKETS = "Mobile_Rx_Packets";
         public static final String TOTAL_RX_PACKETS = "Total_Rx_Packets";
-        //label
-        public static final String CURRENT_APP = "Current_App";
-        public static final String LABELS = "Labels";
         private Columns() {}
             // private constructor to prevent instantiation
         }
 
         public static String[] CLASSES = new String[]{
+                "None",
                 "Camera",
                 "ReadCalendar",
                 "ReadSMS",
+                "ReadContacts",
                 "RequestLocation",
+                "CallHistory",
                 "AudioRecording",
-                "ReadContacts"
         };
 }

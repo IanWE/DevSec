@@ -1,80 +1,53 @@
 package com.SMU.DevSec;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.annotation.SuppressLint;
-import android.app.AppOpsManager;
-import android.app.Dialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Process;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 import org.pytorch.Module;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "DevSec";
-    private static final int PERMISSIONS_REQUEST = 0;
-    CrashHandler crashHandler = CrashHandler.getInstance();
-    static boolean infering = true;
+    //Here to set whether collecting data;
+    static boolean infer_only = false;
+    static int limited_size = 512;//the maximum size of database; if it exceed the size, compress it.
     static int camera = 0;
     static int audio = 0;
     static int sms = 0;
     static int location = 0;
     static int contact = 0;
     static int calendar = 0;
-    static TextView[] status = new TextView[6];
-    static boolean uploaded = false;
-    static boolean collect_only = true;//Here to set whether launch Deep Learning Model
+    static int calllog = 0;
+    static TextView[] status = new TextView[7];
     Switch mSwitch = null;
     EditText jobStatus = null;
-    static long lastday = 0;
-    static long day = 1;
-    static int stage = 0;
     public static ArrayList<SideChannelValue> sideChannelValues = new ArrayList<>();
     static Module module;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        crashHandler.init(MainActivity.this);//register crashhandler
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initializeDB();
@@ -95,43 +68,24 @@ public class MainActivity extends AppCompatActivity {
             mSwitch.setChecked(true);
             checkRunStatus(SideChannelJob.continueRun);
         }
-
-        SharedPreferences edit = getSharedPreferences("user", 0);
-        String name = edit.getString("RSA","None");
-        if (name!=null&&name.equals("None")) {
-            Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
-                    .show();
-            Intent intent = new Intent(MainActivity.this, Register.class);
-            startActivity(intent);//start register page
-            mSwitch.setChecked(false);
-        }
-        // 添加监听 scheduleJob cancelJob
+        // scheduleJob cancelJob
         mSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    SharedPreferences edit = getSharedPreferences("user", 0);
-                    String name = edit.getString("RSA", "None");
-                    if (name!=null&&name.equals("None")) {
-                        Toast.makeText(getBaseContext(), "Please register first.", Toast.LENGTH_SHORT)
-                                .show();
-                        Intent intent = new Intent(MainActivity.this, Register.class);
-                        startActivity(intent);//start register page
-                        mSwitch.setChecked(false);
-                    } else
-                        scheduleJob(buttonView);
+                    scheduleJob(buttonView);
                 } else {
                     boolean d = cancelJob(buttonView);
                 }
             }
         });
-        status[0] = findViewById(R.id.sms);
-        status[1] = findViewById(R.id.camera);
-        status[2] = findViewById(R.id.audio);
-        status[3] = findViewById(R.id.location);
-        status[4] = findViewById(R.id.callhistory);
-        status[5] = findViewById(R.id.calendar);
-        //createNotificationChannel(); //register channel
+        status[0] = findViewById(R.id.camera);
+        status[1] = findViewById(R.id.calendar);
+        status[2] = findViewById(R.id.sms);
+        status[3] = findViewById(R.id.contact);
+        status[4] = findViewById(R.id.location);
+        status[5] = findViewById(R.id.callhistory);
+        status[6] = findViewById(R.id.audio);
     }
 
     public void onResume() {
@@ -207,11 +161,6 @@ public class MainActivity extends AppCompatActivity {
                 SideChannelContract.Columns.TOTAL_RX_BYTES + " INTEGER, " +
                 SideChannelContract.Columns.MOBILE_RX_PACKETS + " INTEGER, " +
                 SideChannelContract.Columns.TOTAL_RX_PACKETS + " INTEGER);";
-        db.execSQL(sSQL);
-
-        sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.GROUND_TRUTH + " (" +
-                SideChannelContract.Columns.SYSTEM_TIME + " INTEGER NOT NULL, " +
-                SideChannelContract.Columns.LABELS + " INTEGER); ";
         db.execSQL(sSQL);
     }
 

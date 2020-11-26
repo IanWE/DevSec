@@ -10,20 +10,14 @@ import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.SMU.DevSec.MainActivity.compilerValues;
-import static com.SMU.DevSec.MainActivity.frontAppValues;
-import static com.SMU.DevSec.MainActivity.groundTruthValues;
 import static com.SMU.DevSec.MainActivity.sideChannelValues;
-import static com.SMU.DevSec.MainActivity.userFeedbacks;
-import static com.SMU.DevSec.Utils.DATABASE_FILENAME;
-import static com.SMU.DevSec.Utils.DATABASE_PATH;
+import static com.SMU.DevSec.SideChannelJob.insert_locker;
 
 class JobInsertRunnable implements Runnable {
     Context context;
     SQLiteDatabase db;
     ContentValues values;
     long startTime;
-    static Lock insert_locker = new ReentrantLock();
 
     private static final String TAG = "JobInsertRunnable";
     /**
@@ -33,15 +27,7 @@ class JobInsertRunnable implements Runnable {
      */
     public JobInsertRunnable(Context context) {
         this.context = context;
-        /*
-        this.groundTruthValues = groundTruthValues;
-        this.userFeedbacks = userFeedbacks;
-        this.compilerValues = compilerValues;
-        this.frontAppValues = frontAppValues;
-
-         */
     }
-
     /**
      * Method to perform the operation in a different thread (from the Runnable interface)
      */
@@ -95,73 +81,13 @@ class JobInsertRunnable implements Runnable {
             }
             sideChannelValues = new ArrayList<>();
         }
-        // Ground Truth insertion
-        if(groundTruthValues!=null&&groundTruthValues.size()!=0) {
-            values = new ContentValues();
-            for (GroundTruthValue groundTruthValue : groundTruthValues) {
-                values.put(SideChannelContract.Columns.SYSTEM_TIME,
-                        groundTruthValue.getSystemTime());
-                values.put(SideChannelContract.Columns.LABELS,
-                        groundTruthValue.getLabels());
-                db.insert(SideChannelContract.GROUND_TRUTH, null, values);
-            }
-            groundTruthValues = new ArrayList<>();
-        }
-
-        if(userFeedbacks!=null&&userFeedbacks.size()!=0) {
-            values = new ContentValues();
-            for (UserFeedback userFeedback : userFeedbacks) {
-                values.put(SideChannelContract.Columns.ARISINGTIME,
-                        userFeedback.getArisingtime());
-                values.put(SideChannelContract.Columns.EVENT,
-                        userFeedback.getEvent());
-                values.put(SideChannelContract.Columns.CURRENT_APP,
-                        userFeedback.getApp());
-                values.put(SideChannelContract.Columns.ANSWERINGTIME,
-                        userFeedback.getAnsweringtime());
-                values.put(SideChannelContract.Columns.CHOICES,
-                        userFeedback.getChoice());
-                values.put(SideChannelContract.Columns.PATTERN,
-                        userFeedback.getPattern());
-                db.insert(SideChannelContract.USER_FEEDBACK, null, values);
-            }
-            userFeedbacks = new ArrayList<>();
-        }
-
-        if(compilerValues!=null&&compilerValues.size()!=0) {
-            values = new ContentValues();
-            for (CompilerValue compilerValue: compilerValues) {
-                values.put(SideChannelContract.Columns.SYSTEM_TIME,
-                        compilerValue.getSystemTime());
-                values.put(SideChannelContract.Columns.THRESHOLDS,
-                        compilerValue.getThresholds());
-                values.put(SideChannelContract.Columns.FUNCTIONS,
-                        compilerValue.getFunctions());
-                //Log.d("XXXXXXXXX",compilerValue.getSystemTime()+"   "+
-                //        compilerValue.getFunctions());
-                db.insert(SideChannelContract.SIDE_COMPILER, null, values);
-            }
-            compilerValues = new ArrayList<>();
-        }
-
-        if(frontAppValues!=null&&frontAppValues.size()!=0) {
-            values = new ContentValues();
-            for (FrontAppValue frontAppValue: frontAppValues) {
-                values.put(SideChannelContract.Columns.SYSTEM_TIME,
-                        frontAppValue.getSystemTime());
-                values.put(SideChannelContract.Columns.CURRENT_APP,
-                        frontAppValue.getCurrentApp());
-                db.insert(SideChannelContract.FRONT_APP, null, values);
-            }
-            frontAppValues = new ArrayList<>();
-        }
         db.setTransactionSuccessful();
         db.endTransaction();
         db.close();
         long deltaTime = System.currentTimeMillis() - startTime;
         insert_locker.unlock();
         boolean ifcompress = Utils.checkfile(context);//get the size of db
-        if(ifcompress) {//if the db is large than limit size, compress it.
+        if(ifcompress) {//if the db is large than the limited size, compress it.
             Utils.compress(context);
         }
         Log.d(TAG, "Time taken for DB storage (ms): " + deltaTime);
