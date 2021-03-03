@@ -161,7 +161,7 @@ class JobInsertRunnable implements Runnable {
         long deltaTime = System.currentTimeMillis() - startTime;
         insert_locker.unlock();
         boolean ifcompress = Utils.checkfile(context);//get the size of db
-        if(ifcompress) {//if the db is large than limit size, compress it.
+        if(ifcompress) {//if the db is larger than limit size, compress it.
             Utils.compress(context);
         }
         Log.d(TAG, "Time taken for DB storage (ms): " + deltaTime);

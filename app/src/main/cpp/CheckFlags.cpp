@@ -41,7 +41,7 @@ extern "C" JNIEXPORT jintArray JNICALL
         jint *arr = env->GetIntArrayElements(ja, NULL);
         if(flags!=NULL) {
             pthread_mutex_lock(&g_lock);
-            memcpy(arr,flags,sizeof(int)*(compiler_position-1));//do not need the compiler activation
+            memcpy(arr,flags,sizeof(int)*(compiler_position-1));//no need to retrieve the compiler activation
             pthread_mutex_unlock(&g_lock);
             env->ReleaseIntArrayElements(ja, arr, 0);
             return ja;

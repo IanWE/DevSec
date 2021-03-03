@@ -62,7 +62,7 @@ public class TrialModel extends AppCompatActivity {
             }
         });
 
-        Intent begin = new Intent(this, SideChannelJob.class);
+        Intent begin = new Intent(this, SideChannelJob.class);//start
         if (!continueRun) {
             continueRun = true;
             startForegroundService(begin);

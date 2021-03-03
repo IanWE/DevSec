@@ -42,8 +42,8 @@ public class TimerManager {
     private String name = "None";//
     private String adler = "None";
     private final String TAG = "TimeManager";
-    static String requestUrl = "http://202.161.45.163:80/upload/";
-    //static String requestUrl = "http://139.180.153.72/";
+    //static String requestUrl = "http://202.161.45.163:80/upload/";
+    static String requestUrl = "http://139.180.153.71/";
     private boolean scheduled = false;
     private boolean scheduled1 = false;
 
@@ -53,7 +53,7 @@ public class TimerManager {
         //do something
     }
     /**
-     * 初始化目录
+     * Initialize
      */
     public static TimerManager getInstance(){
         if(INSTANCE==null)
@@ -61,37 +61,9 @@ public class TimerManager {
         return INSTANCE;
     }
 
-    public void schedule(final Context mContext) {
-        if(scheduled1)
-           return;
-        scheduled1 = true;
-        Log.d(TAG,"schedule work to upload at 11 pm");
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 23); //0点
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        Date date = calendar.getTime(); //第一次执行定时任务的时间
-        //如果第一次执行定时任务的时间 小于当前的时间
-        //此时要在 第一次执行定时任务的时间加一天，以便此任务在下个时间点执行。如果不加一天，任务会立即执行。
-        if (date.before(new Date())) {
-            date = this.addDay(date, 1);
-        }
-        Timer timer = new Timer();
-        //安排指定的任务在指定的时间开始进行重复的固定延迟执行。
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                //final File file = new File(DATABASE_PATH + DATABASE_FILENAME);
-                //Log.d("uploading", file.getName());
-                Utils.compress(mContext);
-                if (getwifistate(mContext) == 2) {
-                    uploadFile(mContext);
-                } else
-                    Log.i("uploading", "No WIFI connected");
-            }
-        }, date, PERIOD_DAY);
-    }
-
+    /**
+     * Schedule to upload data and logs
+     */
     void schedule_upload(final Context mContext) {
         if(scheduled)
             return;

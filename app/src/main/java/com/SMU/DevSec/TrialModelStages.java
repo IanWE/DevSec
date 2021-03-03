@@ -29,14 +29,6 @@ public class TrialModelStages {
     Thread thread;
 
     TrialModelStages(Context context) {
-        /*
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                GetLastApps();
-            }
-        }).start();
-        */
         mContext = context;
     }
 
@@ -49,6 +41,10 @@ public class TrialModelStages {
         return 1;
     }
 
+    /**
+     * Method to get last used applications
+     *
+     */
     public int GetLastApps(){
         int i = 0;
         while(true){
@@ -66,6 +62,10 @@ public class TrialModelStages {
         return 0;
     }
 
+    /**
+     * Method to start trial
+     *
+     */
     public void startDialog() {
         final AlertDialog alertDialog = new AlertDialog.Builder(mContext).create();
         long time = 0;
@@ -82,7 +82,7 @@ public class TrialModelStages {
             thread = new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            trial1();//
+                            trial1();//eliminate functions those keep poping, in native-lib/native-lib.cpp
                         }
                     });
             thread.start();

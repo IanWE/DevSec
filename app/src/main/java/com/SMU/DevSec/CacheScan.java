@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Looper;
-import android.os.Parcelable;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -30,17 +29,13 @@ import java.util.TreeMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.NotificationCompat;
 
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
-import static androidx.core.app.NotificationCompat.FLAG_NO_CLEAR;
 import static com.SMU.DevSec.JobInsertRunnable.insert_locker;
 import static com.SMU.DevSec.MainActivity.audio;
 import static com.SMU.DevSec.MainActivity.camera;
 import static com.SMU.DevSec.MainActivity.compilerValues;
-import static com.SMU.DevSec.MainActivity.count_threshold;
-import static com.SMU.DevSec.MainActivity.filter;
 import static com.SMU.DevSec.MainActivity.frontAppValues;
 import static com.SMU.DevSec.MainActivity.groundTruthValues;
 import static com.SMU.DevSec.MainActivity.lastday;
@@ -49,11 +44,9 @@ import static com.SMU.DevSec.MainActivity.isCollected;
 import static com.SMU.DevSec.MainActivity.location;
 import static com.SMU.DevSec.MainActivity.pkg_name;
 import static com.SMU.DevSec.MainActivity.pkg_permission;
-import static com.SMU.DevSec.MainActivity.preset_threshold;
 import static com.SMU.DevSec.MainActivity.quering;
 import static com.SMU.DevSec.MainActivity.status;
 import static com.SMU.DevSec.MainActivity.check;
-import static com.SMU.DevSec.MainActivity.trial;
 import static com.SMU.DevSec.SideChannelJob.locker;
 import static java.util.Objects.*;
 
@@ -75,10 +68,9 @@ public class CacheScan {
     private static ArrayList<String> target_functions = new ArrayList<String>();
     private final HashMap<String, String> behaviour_map = new HashMap<String, String>();
     private ArrayList<int[]> ALpattern = new ArrayList<int[]>();
-    private int[] thresholdforpattern = {10,10};//number of different functions
+    private int[] thresholdforpattern = {10,10};//number of different functions we monitored on camera set and audio set
     private String[] BehaviorList = {"Information", "Camera", "AudioRecorder", "Location"};
-    private double audio_threshold_level = 0.2;
-    private double camera_threshold_level = 0.2;
+    private double threshold_level = 0.2; //if 20% audio functions are activated, we think it is a true event.
     private int[] cleanpattern = {0,0};
     private String AppStringforcheck = "";
     private long firsthit = 0;
@@ -89,20 +81,17 @@ public class CacheScan {
     public static boolean initializing = false;
 
     CacheScan(Context mContext) throws IOException {
-        //mContext = context;
         init(mContext);
     }
-    //6 function
+    /**
+     * Function to initialize the class
+     */
     private void init(Context mContext) throws IOException {
-        //exec("cat /proc/`pgrep DevSec`/maps");
         initializing = true;
         int pid = android.os.Process.myPid();
         CacheDir = mContext.getCacheDir();
-        //behaviour_map.put("LocationManagerService.java_updateLastLocationLocked", "Location");
-        //behaviour_map.put("ContentResolver.java_createSqlQueryBundle", "Information");
         String audioapi = "Audio";
         behaviour_map.put(audioapi, "AudioRecord");
-        //behaviour_map.put("_ZN7android5media12IAudioRecord11asInterfaceERKNS_2spINS_7IBinderEEE", "AudioRecorder");
         String cameraapi = "Camera";
         behaviour_map.put(cameraapi, "Camera");
         AssetManager am = mContext.getAssets();
@@ -110,28 +99,26 @@ public class CacheScan {
         ArrayList<String> filename = new ArrayList<String>();
         ArrayList<String> offset = new ArrayList<String>();
         ArrayList<String> func_list = new ArrayList<String>();
+        //Read target functions needed to monitor
         String[] targets = am.list("targets");
-        String temp;
-        String vendor = BasicInfo.getDeviceBrand();
         for (String f : requireNonNull(targets)) {
-            Log.d("CacheScan", f);//+ " " + f.substring(f.lastIndexOf(".") + 1));
+            Log.d("CacheScan", f);
             if (f.substring(f.lastIndexOf(".") + 1).equals("so")) {
                 String oat_target = Utils.readSaveFile("targets/" + f, mContext);
                 String[] arr = oat_target.split(",");
                 StringBuilder funcs = new StringBuilder();
                 for (int i = 1; i < arr.length; i++) {
                     target_functions.add(arr[i]);
-                    if (i == 1) {//the first function do need a comma
+                    if (i == 1) {
                         funcs.append(arr[i]);
                         continue;
                     }
                     funcs.append(",").append(arr[i]);
                 }
-                func_list.add(funcs.toString());
+                func_list.add(funcs.toString()); //function list
                 dex.add("");
-                filename.add(arr[0]); //get the path of library in the android system;
-                //Log.d(TAG, "TTTTTTTTTT "+pid+" funcs:" + funcs.toString() + " " + arr[0] +" "+arr[arr.length - 1].split("\n")[0]);
-            } else if (f.substring(f.lastIndexOf(".") + 1).equals("oat")){
+                filename.add(arr[0]); //path of the library in the android system;
+            } else if (f.substring(f.lastIndexOf(".") + 1).equals("oat")){ // when it comes to oat, we have to know the path of oat and dex file.
                 String oat_target = Utils.readSaveFile("targets/" + f, mContext);
                 String[] arr = oat_target.split(",");
                 String target_oat = arr[0];
@@ -151,7 +138,6 @@ public class CacheScan {
                 //Log.d(TAG, "TTTTTTTTTT "+pid+" funcs:" + funcs.toString() + " " + target_dex +" "+target_oat);
             }
         }
-        //static Context mContext;
         String[] dexlist = (String[]) dex.toArray(new String[targets.length]);
         String[] filenames = (String[]) filename.toArray(new String[targets.length]);
         String[] func_lists = (String[]) func_list.toArray(new String[targets.length]);
@@ -160,31 +146,23 @@ public class CacheScan {
         notification = edit.getLong("Notification",0);
         answered = edit.getLong("Answered",0);
         lastday = edit.getLong("lastday", 0);
-        day = edit.getLong("day", 0);
+        day = edit.getLong("day", 0); //how many days it has run
 
-        //ALpattern.add(Utils.getArray(mContext,"1"));
-        //ALpattern.add(Utils.getArray(mContext,"2"));
-        //for(int i=0;i<ALpattern.size();i++){
-            //thresholdforpattern[i] = Utils.sum(ALpattern.get(i));
-        //    thresholdforpattern[i] = ALpattern.get(i).length;
-        //}
         init(dexlist, filenames, func_lists);//initiate the JNI function
-        //ResetThreshold();
-        //if(thresholdforpattern[0]<10)
-        //    camera_threshold_level = 0.8;
-        //if(thresholdforpattern[1]<10)
-        //    audio_threshold_level = 0.8;
-        //showToast("Intialized successfully");
-        Log.d(TAG,"Threshold Level is at "+camera_threshold_level+"-"+audio_threshold_level);//only output
+        Log.d(TAG,"Threshold Level is at "+threshold_level);//only output
         initializing = false;
         check = true;
     }
 
+    /**
+     * Function to execute search the address of target file in memory
+     *
+     */
     private String[] exec(int pid, String target) {
         String data = "";
         try {
             Process p = null;
-            String command = "grep " + target + " /proc/`pgrep " + MainActivity.NAME + "`/maps"; //还没进内存
+            String command = "grep " + target + " /proc/`pgrep " + MainActivity.TAG + "`/maps"; //还没进内存
             //Log.d(TAG,"TTTTTTTTTTTT"+command);
             p = Runtime.getRuntime().exec(command);
             BufferedReader ie = new BufferedReader(new InputStreamReader(p.getErrorStream()));
@@ -213,6 +191,9 @@ public class CacheScan {
         return data.split(" ");
     }
 
+    /**
+     * Function to extract dex files from jar package
+     */
     public static String[] decompress(String fileName) {
         JarFile jf = null;
         String filename = "";
@@ -257,16 +238,10 @@ public class CacheScan {
             }
         }
     }
-    /*
-    public static void getGroundTruth(int gt){//Should we let the user to choose app?
-        String topPackageName = getTopApp();
-        GroundTruthValue groundTruthValue = new GroundTruthValue();
-        groundTruthValue.setLabels(gt);
-        groundTruthValue.setCurrentApp(topPackageName);
-        groundTruthValue.setSystemTime(System.currentTimeMillis());
-        groundTruthValues.add(groundTruthValue);
-    }
-    */
+
+    /**
+     * Function to get front application
+     */
     public static String getTopApp(Context mContext) {
         UsageStatsManager mUsageStatsManager = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);//usagestats
         long time = System.currentTimeMillis();
@@ -291,6 +266,9 @@ public class CacheScan {
         return topPackageName;
     }
 
+    /**
+     * Function to update UI
+     */
     private void updateUI(final int result) {
         final long iday;
         if(isCollected) {
@@ -328,8 +306,16 @@ public class CacheScan {
                 }
             }
         });
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
+    /**
+     * Function to check if parse address successfully
+     */
     private static void unparsedaddr(final int success, final int result) {
         if (success == 0) {
             status[result].post(new Runnable() {
@@ -372,39 +358,35 @@ public class CacheScan {
                 }
             });
         }
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void showToast(final Context mContext, final String text) {
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-                Looper.prepare();
-                try {
-                    Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Log.e("error", e.toString());
-                }
-                Looper.loop();
-            }
-        }.start();
-    }
-
+    /**
+     * Method to get current activated pattern
+     */
     static int[] getPattern(int c){
         int []p =GetPattern(c);
-        ClearPattern(3);
+        ClearPattern(3);//clear the activations
         return p;
     }
 
-    void Notify(Context mContext) { //FrontApp ok, SideCompiler ok, Side_Channel_Info ok, Ground_Truth ok,
-        int[] flags = CacheCheck();
+    /**
+     * Function to check and send notification
+     */
+    void Notify(Context mContext) {
+        int[] flags = CacheCheck();//retrieve the flags of activations for different function. In native-lib/CheckFlags.cpp
         //insert the logs into dataset
-        long[] times = GetTimes();
+        long[] times = GetTimes();//retrieve the times of all activated functions. In native-lib/CheckFlags.cpp
         int[] logs;
-        if (times != null&&times.length>0) {
-            int[] thresholds = GetThresholds();
-            logs = GetLogs();
+        if (times!=null && times.length>0) {
+            int[] thresholds = GetThresholds();//Get the thresholds during the period.(when a function was activated, we record the threshold) In native-lib/CheckFlags.cpp
+            logs = GetLogs();//Get all activated functions during the period. In native-lib/CheckFlags.cpp
             ArrayList<CompilerValue> cvs = new ArrayList<CompilerValue>();
+            // Store these data into an array, they will be save in a database eventually.
             for (int i = 0; i < times.length; i++) {
                 CompilerValue cv = new CompilerValue();
                 cv.setSystemTime(times[i]);
@@ -418,20 +400,20 @@ public class CacheScan {
                 insert_locker.unlock();
             }
         }
-        //get app
-        app = getTopApp(mContext); // get package name. Even if there is actually an activation, the returned app may still be a None
+        //get front apps
+        app = getTopApp(mContext); // get package name.
         int permission_type = 0;
         if(pkg_permission.containsKey(app)){
-            permission_type = pkg_permission.get(app);
+            permission_type = pkg_permission.get(app);//Get the permission type of app, 1 for camera, 2 for audio, 3 for both.
         }
-
-        if(app.equals(AppStringforcheck)||app.equals("None")){//if app equals to the previous one,
+        //if app equals to the previous one,
+        if(app.equals(AppStringforcheck)||app.equals("None")){//Even if there is actually an activation, the returned app may still be a None.(Once get a list of active apps, the list will be cleared. So 'None' means no app changes)
             sameapp++;
         }
         else {
             sameapp = 1;
-        }//Log.d(TAG,!app.equals("None")+"  "+!app.toUpperCase().contains("LAUNCHER")+"  "+!app.equals(preapp));
-        //if there is an app change, dismiss the first one.
+        }
+        //if there is an app change, dismiss the first one.(Every time launching an app, all function will be activated. So we dismiss the first one)
         if(!app.equals("None")&&!app.toUpperCase().contains("LAUNCHER")&&!app.equals(preapp)){
             dismiss = true;
             firsthit = System.currentTimeMillis();
@@ -439,27 +421,30 @@ public class CacheScan {
         }
         int count = 1;
 
-        // if it is the same application, but 5 seconds has passed over, set the count to 3. (a user shutdown and reopen an app to activate functions.)
-        if(app.equals(preapp)&&!dismiss&&System.currentTimeMillis()-setfalse>600000){
+        // if it is the same application with the previous one, and 300 seconds has passed, we also set the dismiss true.
+        if(app.equals(preapp)&&!dismiss&&System.currentTimeMillis()-setfalse>300000){
             Log.d(TAG,"Set dismiss true");
             dismiss = true;
             exceedtime = true;
             firsthit = System.currentTimeMillis();
         }
 
-        //if some functions are not activated, close the dismiss after 4 seconds
+        //if some functions are not activated, close the dismiss after 5 seconds
+        //(the number of seconds is very important, since some phone runs very slow; for example, an app takes 5 seconds to launch, there will still be a false notification.)
         if(!exceedtime&&dismiss&&System.currentTimeMillis()-firsthit>5000){
             dismiss = false;
             //setfalse = System.currentTimeMillis();
             Log.d(TAG,"Set dismiss back to false");
         }
         AppStringforcheck = app;//previous app
-        //On Pixel, app is unable to know whether switched out, when someone switch out and switch back. false positiveness may aise.
+        //On Pixel, app is unable to know whether switched out, when someone switch out and switch back. false positiveness may arise.
+        //On most phones, every time you switch out, it will turn out a LAUNCHER. This could be a better way for other phone to check the app change
         if (app.equals("None")||app.toUpperCase().contains("LAUNCHER")) {
             app = preapp;
         }
         preapp = app;
         long time = System.currentTimeMillis();
+        //save the list of front apps into an array, it will be saved in database eventually.
         FrontAppValue fa = new FrontAppValue();
         fa.setSystemTime(time);
         fa.setCurrentApp(app);
@@ -469,72 +454,64 @@ public class CacheScan {
         Log.d(TAG, AppStringforcheck + " >>> "+permission_type+" >>>"
                 + flags[0] + ":" + flags[1] + ":" + flags[2] + ":" + flags[3] + "."
                 + "notification:" + notification +" Sameapp:"+sameapp);
-        if (Utils.sum(flags) != 0) {//if some function are activated
-            //检查一次, 地址是否都被成功解析
+        if (Utils.sum(flags) != 0) {//if some functions are activated
+            //check once whether each function is parsed successfully.
             int length = 4;
             if (!ischeckedaddr) {
-                int[] addrs = addr();//get the addresses
+                int[] addrs = addr();//Get the addresses
                 for (int i = 0; i < length; i++) {
                     unparsedaddr(addrs[i], i);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
                 }
                 ischeckedaddr = true;
-                thresholdforpattern = GetT();
+                thresholdforpattern = GetT();//Get the calculated threshold. In native-lib/CheckFlags.cpp
             }
-            updateUI(4);
+            updateUI(4);//UI for notification number add 1
             for (int i = 0; i < length; i++) {//0-3  5 6
-                String cur = target_functions.get(i);
+                //String cur = target_functions.get(i);
                 if (flags[i] != 0){
                     int cmp = 0;
                     if(i==1||i==2){
-                        if(sameapp<count){
+                        if(sameapp<count){//ignore the first activation of any event
                             Log.d(TAG,"It is the first activation, skip");
                             ClearPattern(i);
                             continue;
                         }
-                        int[] pattern = GetPattern(i);
-                        //ClearPattern();
-                        //if(!AppStringforcheck.equals("None")&&
-                        if((permission_type&i)!=i&&!AppStringforcheck.equals("None")){//if app do not have camera permisson, skip
-                            HandleCapture(i);
+                        int[] pattern = GetPattern(i);//get pattern of i(camera/audio)
+                        if((permission_type&i)!=i&&!AppStringforcheck.equals("None")){//if app do not have corresponding permission, skip
+                            HandleCapture(i);//clear pattern
                             Log.d(TAG,(permission_type&i)+" "+AppStringforcheck+" do not have "+i+" permisson, false positive");
-                            ClearPattern(3);
+                            ClearPattern(3);//clear both camera and audio
                             continue;
                         }
-                        double thforcamera = camera_threshold_level;
-                        double thforaudio = audio_threshold_level;
+                        //double thforcamera = camera_threshold_level;
+                        //double thforaudio = audio_threshold_level;
                         //cmp = Utils.pattern_compare(ALpattern.get(i - 1), pattern);
                         cmp = Utils.sum(pattern);
-                        if(cmp<=(int)(thresholdforpattern[i-1]*thforcamera)){
-                            cleanpattern[i-1]++;
-                            HandleCapture(i);
-                            if(cleanpattern[i-1]>2){//accumulating
+                        if(cmp<=(int)(thresholdforpattern[i-1]*threshold_level)){//if the pattern is less than the threshold, we do not pop notification.
+                            cleanpattern[i-1]++;//accumulate
+                            HandleCapture(i);//clear pattern
+                            if(cleanpattern[i-1]>2){//if it still did not reach the threshold after 2 seconds, we think it a false activation and clear it.
                                 cleanpattern[i-1] = 0;
                                 ClearPattern(i);
                                 Log.d(TAG,"pattern-"+i+" clear : "+cmp);
                             }
-                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*thforcamera);
+                            Log.d(TAG,"pattern did not match pattern-"+i+"; "+cmp+" is less than "+thresholdforpattern[i-1]*threshold_level);
                             continue;
                         }
-                        else if(i==2) {//if the pattern meet both camera and audio, present camera only
+                        else if(i==2) {//If  Camera and audio are both activated, we ignore the audio event.(Since opening most cameras will activate both events.)
                             int[] patternX = GetPattern(1);
-                            //int sumcpattern = Utils.pattern_compare(ALpattern.get(0), patternX);
                             int sumcpattern = Utils.sum(patternX);
-                            if (sumcpattern!=0&&sumcpattern >=(int)(thresholdforpattern[0] * (thforcamera))) {
+                            if (sumcpattern!=0&&sumcpattern >=(int)(thresholdforpattern[0] * threshold_level)) {
                                 HandleCapture(i);
                                 Log.d(TAG, "Camera pattern is " + sumcpattern + ". Skip audio event.");
                                 i = 1;
                             }
-                        }//avaupdateAudioPortCache
-                        ClearPattern(3);
+                        }
+                        ClearPattern(3);//Pattern clear
                         cleanpattern[0] = 0;
                         cleanpattern[1] = 0;
                         Log.d(TAG,"pattern match pattern-"+i+"; "+cmp+" reach the threshold "+thresholdforpattern[i-1]);
-                        if(dismiss){
+                        if(dismiss){//if dismiss == true, we ignore some events
                             dismiss = false;
                             exceedtime = false;
                             i = 2;
@@ -551,12 +528,12 @@ public class CacheScan {
                     groundTruthValues.add(groundTruthValue);
                     insert_locker.unlock();
                     int p =0;
-                    if(pkg_permission.containsKey(app)){
+                    if(pkg_permission.containsKey(app)){//get app's permission
                         p = pkg_permission.get(app);
                     }
                     if (i==2) {
                         lastaudio = time;
-                        if (lastaudio - lastcamera < 2000||(p&i)!=i) {//if the camera follow audio tightly
+                        if (lastaudio - lastcamera < 2000||(p&i)!=i) {//if the audio event follows camera event tightly, we skip it.
                             Log.d(TAG, "Skip a audio event" + (lastaudio - lastcamera));
                             ClearPattern(3);
                             HandleCapture(i);
@@ -575,7 +552,7 @@ public class CacheScan {
                     }
                     HandleCapture(i);
                     updateUI(i);
-                    //Log.d(TAG, app + ":" + target_functions.get(i));//&& flags[i]!=0
+                    //each event should have interval with last notification;(handled==true indicate if the previous camera/audio events are answered)
                     if ((i==1 && handled[i] && time-lastactivetime>3000) ||
                             (i==2 && handled[i]&&time - lastactivetime>1000)){  //Generate only one notification at the same time
                         notification++;
@@ -637,6 +614,9 @@ public class CacheScan {
         intent.putExtra("pattern",cmp);
     }
 
+    /**
+     * Function to reset threshold, not be used now.
+     */
     private void ResetThreshold(Context mContext) {
         if (!reset_thresh) {
             int threshold = getthreshold();
@@ -663,6 +643,9 @@ public class CacheScan {
         }
     }
 
+    /**
+     * Function to execute shell.
+     */
     private String[] exec(String target) {
         StringBuilder data = new StringBuilder();
         try {
@@ -688,19 +671,61 @@ public class CacheScan {
         return data.toString().split(" ");
     }
 
+    /**
+     * Function to get flags
+     */
     public static native int[] CacheCheck();
+
+    /**
+     * Function to clear flags.
+     */
     public native void HandleCapture(int i);
+    /**
+     * Function to read address of functions in memory
+     */
     public native int[] addr();
+    /**
+     * Function to get threshold.
+     */
     public static native int getthreshold();
+    /**
+     * Function to get the counts for all activations.
+     */
     public static native int[] GetThresholds();
+    /**
+     * Function to get activated time for all activations.
+     */
     public static native long[] GetTimes(); //for compiler
+    /**
+     * Function to get all activations.
+     */
     public static native int[] GetLogs(); //for compiler
+    /**
+     * Function to increase threshold.
+     */
     public static native void increase();
+    /**
+     * Function to decrease threshold.
+     */
     public static native void decrease();
+    /**
+     * Function to set threshold.
+     */
     public static native void setthreshold(int new_thresh);
-    //public static native void filteraddr(int index);
+    /**
+     * Function to initialize the scanner.
+     */
     public static native void init(String[] dexlist,String[] filename,String[] func_list);
+    /**
+     * Function fetch current pattern.
+     */
     public static native int[] GetPattern(int c);
+    /**
+     * Function to clear the pattern.
+     */
     public static native int[] ClearPattern(int c);
+    /**
+     * Function to get the numbers of available functions for camera and audio individually,
+     */
     public static native int[] GetT();
 }

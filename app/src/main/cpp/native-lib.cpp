@@ -43,29 +43,24 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
         JNIEnv *env,
         jobject thiz,jintArray ptfilter) {
     continueRun = 1;
-    if(firstrun!=1) {//since if I run this function repeatetively, the app tend to crash, So I only pause the thread.
+    if(firstrun!=1) {//since if we run this function repeatedly, the app tend to crash, so we only pause the thread.
         LOGD("Restart scanning.");
         return;
     }
     firstrun = 0;
+    //ptfilter is a filter used to ignore some functions
     int* arrp = env->GetIntArrayElements(ptfilter,0);
     for(int i=0;i<length_of_camera_audio[0];i++)//camera
     {
         if (arrp[i] == 1) {
             *((size_t *) addr[camera_audio[0]] + i) = 0;
         }
-        //else if(*((size_t *) addr[camera_audio[0]] + i)!=0){
-        //    LOGD("Camera function %s are reserved",camera_list[i].c_str());
-        //}
     }
     for(int i=length_of_camera_audio[0];i<length_of_camera_audio[0]+length_of_camera_audio[1];i++)//audio
     {
         if(arrp[i]==1) {
             *((size_t *) addr[camera_audio[1]] + i - length_of_camera_audio[0]) = 0;
         }
-        //else if(*((size_t *) addr[camera_audio[i]] + i)!=0){
-        //    LOGD("Audio function %s are reserved",audio_list[i-length_of_camera_audio[0]].c_str());
-        //}
     }
     for(int i=1;i<3;i++){
         int c = i-1;
@@ -90,7 +85,7 @@ Java_com_SMU_DevSec_SideChannelJob_scan(
     }
     hit(&g_lock,  compiler_position, &continueRun,
         threshold, flags, times, thresholds, logs, &log_length, sum_length,
-        addr,camera_pattern, audio_pattern, length_of_camera_audio);
+        addr,camera_pattern, audio_pattern, length_of_camera_audio); //start scannning. in libflush/hit.c
     //running = 0;
     LOGD("Finished scanning %d",running);
     return;
@@ -110,7 +105,7 @@ Java_com_SMU_DevSec_TrialModelStages_trial1(
         JNIEnv *env, jobject thiz) {
     LOGD("Start trial 1.\n");
     int length_alive_function = length_of_camera_audio[0]+length_of_camera_audio[1];
-    stage1_(filter, threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1,sum_length); //eliminate all poping functions.
+    stage1_(filter, threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1,sum_length); //eliminate functions that keeps poping.
     LOGD("Finish TrialMode 1");
     return;
 }
@@ -138,14 +133,16 @@ int address_check(std::string function){
     }
     return 0;
 }
-
+/**
+ * Function to initialize the setting
+ */
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_SMU_DevSec_CacheScan_init(
         JNIEnv *env,
         jobject thiz,
         jobjectArray dexlist, jobjectArray filenames, jobjectArray func_lists) {
-    pthread_mutex_init(&g_lock, NULL);
-    jsize size = env->GetArrayLength(dexlist);
+    pthread_mutex_init(&g_lock, NULL);//create a locker
+    jsize size = env->GetArrayLength(dexlist);//get number of dex files
     char** func_list; //functions' offsets of every library;
     //get address list
     mfiles = static_cast<size_t *>(malloc(sizeof(size_t *) * size));
@@ -162,38 +159,22 @@ Java_com_SMU_DevSec_CacheScan_init(
         //expand addr[];
         sum_length = sum_length + length;
         addr = static_cast<size_t *>(realloc(addr,sum_length*sizeof(size_t)));
-        mfiles[i] = ReadOffset(env, dex, addr, func_list, length, filename, camera_list, audio_list);
+        mfiles[i] = ReadOffset(env, dex, addr, func_list, length, filename, camera_list, audio_list);//read the offsets of functions. In ReadOffset.h
     }
     LOGD("Functions Length %d",sum_length);
     LOGD("Camera List: %d, Audio List: %d",length_of_camera_audio[0],length_of_camera_audio[1]);
     threshold = get_threshold();
-    threshold = adjust_threshold(threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1);//
-    //threshold = 9999;
+    threshold = adjust_threshold(threshold, length_of_camera_audio, addr, camera_audio, &finishtrial1);//adjust threshold
     camera_pattern = (int*)malloc(sizeof(int)*length_of_camera_audio[0]);
     memset(camera_pattern,0,sizeof(int)*length_of_camera_audio[0]);
     audio_pattern = (int*)malloc(sizeof(int)*length_of_camera_audio[1]);
     memset(audio_pattern,0,sizeof(int)*length_of_camera_audio[1]);
     filter = (int*)malloc(sizeof(int)*(length_of_camera_audio[0]+length_of_camera_audio[1]));
     memset(filter,0,(length_of_camera_audio[0]+length_of_camera_audio[1])*sizeof(int));
-    //disorder the array
-    /*
-    srand(1);
-    for(int i=0;i<length_of_camera_audio[0];i++){
-        int t = rand()%length_of_camera_audio[0];
-        if(!address_check(camera_list[i])){
-            *((size_t*)addr[1]+i) = 0;
-        }
-        if(!address_check(camera_list[i])){
-            *((size_t*)addr[1]+t) = 0;
-        }
-        swap(((size_t*)addr[1]+i),((size_t*)addr[1]+t));
-        swap(camera_list[i],camera_list[t]);
-    }*/
-    std::string temp="";
+
+    std::string temp;
     int found = 0;
     for(int i=0;i<length_of_camera_audio[0];i++) {
-        if (i == 1018)
-            LOGD("KKKKKKKKKKKKKKKKK %s", camera_list[i].c_str());
         if (temp == camera_list[i] && found == 1) {//only retain one function with the same name
             *((size_t *) addr[1] + i) = 0;
             filter[i] = 1;
@@ -211,8 +192,6 @@ Java_com_SMU_DevSec_CacheScan_init(
     }
     found = 0;
     for(int i=0;i<length_of_camera_audio[1];i++){
-        if (i == 204)
-            LOGD("KKKKKKKKKKKKKKKKK %s", audio_list[i].c_str());
         if(temp==audio_list[i]&&found==1) {
             *((size_t*)addr[2]+i) = 0;
             filter[i] = 1;
@@ -228,7 +207,6 @@ Java_com_SMU_DevSec_CacheScan_init(
         } else
             found = 0;
     }
-    //swap(&addr[0],&addr[3]);
     flags = (int*)malloc(sum_length*sizeof(int));
     memset(flags,0,sum_length*sizeof(int));
     LOGD("Finish Initializtion");

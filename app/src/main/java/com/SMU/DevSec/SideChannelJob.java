@@ -6,8 +6,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.job.JobParameters;
-import android.app.job.JobService;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -58,55 +56,45 @@ public class SideChannelJob extends Service {
     private static final String description =  "Collecting Data";
     static Lock locker = new ReentrantLock();
     long start_time = 0;
-    boolean datacollecting = false;
     Thread thread_collect = null;
     Thread thread_notify = null;
     /**
-     *通过通知启动服务
+     *Start service by notification
      */
     @TargetApi(Build.VERSION_CODES.N)
     public void setForegroundService()
     {
-        //设置通知的重要程度
         int importance = NotificationManager.IMPORTANCE_LOW;
-        //构建通知渠道
+        //build channel
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID, importance);
         Intent intent;
         channel.setDescription(description);
         if(trial==null) {
             SharedPreferences edit = getSharedPreferences("user", 0);
-            trial = edit.getString("trialmodel", "0");//
+            trial = edit.getString("trialmode", "0");//
         }
-        if(trial.equals("1"))
+        if(trial.equals("1"))//if not completed trial
             intent = new Intent(this, MainActivity.class);
         else
             intent = new Intent(this, TrialModel.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-        //在创建的通知渠道上发送通知
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
-        builder.setSmallIcon(R.mipmap.ic_launcher_foreground) //设置通知图标
-                .setContentTitle("DevSec")//设置通知标题
-                .setContentText("Scanning")//设置通知内容
-                .setOngoing(true)//设置处于运行状态
+        builder.setSmallIcon(R.mipmap.ic_launcher_foreground)
+                .setContentTitle("DevSec")
+                .setContentText("Scanning")
+                .setOngoing(true)
                 .setContentIntent(pendingIntent)
                 .setDeleteIntent(pendingIntent);
-                //.setAutoCancel(true); //用户触摸时，自动关闭
-        //向系统注册通知渠道，注册后不能改变重要性以及其他通知行为
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);
-        //将服务置于启动状态 NOTIFICATION_ID指的是创建的通知的ID
         startForeground(111,builder.build());
     }
 
     @Override
     public int onStartCommand(Intent intent,int flags,int startId){
-        //int pid = android.os.Process.myPid(); //get the self pid
         Log.d(TAG, "Job started");
-        //Toast.makeText(this, "Started Data Collection", Toast.LENGTH_SHORT).show();
-        //if(thread_notify==null&&thread_collect==null)
-        doBackgroundWork();
         start_time = System.currentTimeMillis();
+        doBackgroundWork();
         Toast.makeText(this, "Job scheduled successfully", Toast.LENGTH_SHORT)
                 .show();
         return super.onStartCommand (intent,flags,startId);
@@ -120,16 +108,6 @@ public class SideChannelJob extends Service {
         thread_collect = new Thread(new Runnable() {
             @Override
             public void run() {
-                /*
-                while(datacollecting) {
-                    Log.d(TAG,"The data collection thread is still running, wait until it stop");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                 */
                 // Initializing primitives and objects
                 int count = 0;
                 StorageManager storageManager =
@@ -138,7 +116,6 @@ public class SideChannelJob extends Service {
                         (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
                 // Loop to collect side channel values via API calls
                 while (continueRun) {
-                    datacollecting = true;
                     try {
                         String[] volumes = (String[]) storageManager.getClass()
                                 .getMethod("getVolumePaths", new Class[0])
@@ -225,14 +202,17 @@ public class SideChannelJob extends Service {
                         // Compute cumulative time to collect 100 sets of side channel values
                         long deltaTime = System.currentTimeMillis() - startTime;
                         cumulativeTime = cumulativeTime + deltaTime;
+
                         if (((scValueCount % 60) == 0) && index != 1) {//Do not classiy when there is no sc
                             //Log.d(TAG, String.valueOf(sideChannelValues.subList(index-60,index)));
                             //Whether use model to infer
+                            /*
                             if (!collect_only) {
                                 //new Thread(new MonitorFrontEvent(getBaseContext())).start();
                                 if (infering) new Thread(new Classifier(getBaseContext(),
                                         new ArrayList(sideChannelValues.subList(index - 60, index)))).start();
                             }
+                            */
                             Log.d(TAG, "API Call Batch Count: " + scValueCount +
                                     ", Cumulative Time (ms): " + cumulativeTime);
                         }
@@ -257,20 +237,19 @@ public class SideChannelJob extends Service {
                     // Log.d(TAG, "run: " + count);
                     // Send side channel values to a new thread and start data collection in another
                     // different thread after collecting 1000 sets of side channel values
-                    if (count % 1080 == 0&&stage==0) {//Do not store info when at trial mode
-                        new Thread(new JobInsertRunnable(getBaseContext())).start();
+                    if (count%1020 == 0&&stage==0) {//Do not save collected info when at trial mode
+                        new Thread(new JobInsertRunnable(getBaseContext())).start();//start a thread to save data
                         Log.d(TAG, "DB Updated");
-                        //Clear the updated data
                         index = 1;
                         scValueCount = 0;
                         cumulativeTime = 0;
                         count = 0;
                     }
                 }//while
-                datacollecting = false;
             }
         });
         thread_collect.start();
+
 
         // Start scan
         if (stage == 0) {
@@ -281,7 +260,7 @@ public class SideChannelJob extends Service {
                     //ClassCreate
                     try {
                         if (cs == null) {
-                            cs = new CacheScan(getBaseContext());//放到mainActivity里面去初始化
+                            cs = new CacheScan(getBaseContext());//Initialize the CacheScan class
                             Log.d(TAG,"Initialize CacheScan");
                         }
                     } catch (IOException e) {
@@ -289,21 +268,22 @@ public class SideChannelJob extends Service {
                     }
                     //Start Scaning
                     if(pattern_filter==null)
-                        pattern_filter = Utils.getArray(getBaseContext(), "ptfilter");
-                    scan(pattern_filter, pattern_filter.length);
+                        pattern_filter = Utils.getArray(getBaseContext(), "ptfilter");//Retrieve an array of pattern filter; since we only need to monitor partial functions, others will get blocked
+                    scan(pattern_filter, pattern_filter.length);//start scanning , in native-lib.cpp
                 }
             }).start();
 
+            //Start a notification thread.
             thread_notify = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         while(cs==null) {
-                            Thread.sleep(100);
+                            Thread.sleep(100);//Waiting until CacheScan class is initialized
                         }
                         while (continueRun) {
                             Thread.sleep(1000);
-                            cs.Notify(getBaseContext());
+                            cs.Notify(getBaseContext());//every 1 second to check if it need to send notification
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -329,7 +309,6 @@ public class SideChannelJob extends Service {
     }
 
     public native void scan(int[] pattern,int length);
-    public native void trial2();
     public native void pause();
     /**
      * Method to compute battery level based on API call to BatteryManager
@@ -360,7 +339,7 @@ public class SideChannelJob extends Service {
     public void onDestroy(){
         super.onDestroy ();
         final long minutes = (System.currentTimeMillis()-start_time)/(1000*60);
-        pause();
+        pause();//pause the scanning
         //locker.lock();
         if(stage==0) {//not in trial mode
             if(minutes>0) {

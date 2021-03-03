@@ -67,26 +67,26 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
         return;
     }
     LOGD("xxxxxxxxxxxxxxxxxxxx5");
-    for(int i=0;i<oat_dex_storages.size();i++){
+    for(int i=0;i<oat_dex_storages.size();i++){//traverse all oat_dex files
         std::vector<std::vector<std::string>> func_list;
         std::vector<std::string> classnames;
         jstring obj = (jstring)env->GetObjectArrayElement(dexlist,i);
         string dexfile = env->GetStringUTFChars(obj,NULL);
-        func_list = dexparse(dexfile.c_str(), classnames);
-        //func_list is all func in dex file, funcs is our target function
-        for(size_t t=0; t<length; t++) { //
+        func_list = dexparse(dexfile.c_str(), classnames);//get the function list in dexfile
+        //func_list contains all functions in dex file; funcs is our target function
+        for(size_t t=0; t<length; t++) {//traverse our target functions
             if(addr[current_length+t]!=0&&f[t]!=NULL)//if it is a specific function
                 continue;
             int k = 0;
-            for(int cls=0;cls<func_list.size();cls++) {//find the class
+            for(int cls=0;cls<func_list.size();cls++) {//traverse all class in the oatdexfile
                 //if (!strcmp((char *)classnames[cls].c_str(), c[t])){
                 if (strstr((char *)classnames[cls].c_str(), c[t])){
                     if(strstr((char *)classnames[cls].c_str(), "Audio")) {//if it is Audio
                         k = 1;
                     }
-                    for(int fc = 0; fc < func_list[cls].size(); fc++) {//find the function
+                    for(int fc = 0; fc < func_list[cls].size(); fc++) {//traverse all functions in the class
                         //LOGD("Compare Function: %d: %s and %s",func_list[cls].size(),func_list[cls][fc].c_str(), f[t]);
-                        if(f[t]==NULL){//record the addr only if it is the first run
+                        if(f[t]==NULL){//If do not specify the function, add all functions in.
                             //LOGD("Found class %s",(char *)classnames[cls].c_str());
                             length_of_camera_audio[k]++;
                             if(k==0)
@@ -94,20 +94,16 @@ void ReadOatOffset(JNIEnv* env, void* start, std::string jar_file, size_t* addr,
                             else
                                 audio_list.push_back(classnames[cls]+func_list[cls][fc]);
                             int l = length_of_camera_audio[k];
-                            Art::OATParser::OatClass oatcls = oat_dex_storages[i]->GetOatClass(cls);
-                            Art::OATParser::OatMethod m = oatcls.GetOatMethod(fc);
+                            Art::OATParser::OatClass oatcls = oat_dex_storages[i]->GetOatClass(cls);//get oat class
+                            Art::OATParser::OatMethod m = oatcls.GetOatMethod(fc);//get oat method
                             addr[current_length+t] = reinterpret_cast<size_t>(realloc(
                                     reinterpret_cast<void *>(addr[current_length+t]),
-                                    l * sizeof(size_t)));
+                                    l * sizeof(size_t)));//allocate space
                             *((size_t *) addr[current_length + t] + l - 1) = 0;
-                            //store the addr in a list
-                            if(m.GetOffset()!=0) {
+                            if(m.GetOffset()!=0) {//if the offset of m is not 0, we add it in the list.
                                 *((size_t *) addr[current_length + t] + l - 1) =
                                         (size_t) start + m.GetOffset() +
                                         oatParser.GetOatHeaderOffset();
-                                //LOGD("Function:%s %s and offset %x, %p",
-                                //     classnames[cls].c_str(),func_list[cls][fc].c_str(), m.GetOffset(),
-                                //     *((size_t *) addr[current_length + t] + l - 1));
                             }
                         }
                         else if(!strcmp((char *) func_list[cls][fc].c_str(), f[t])) {
@@ -166,7 +162,7 @@ ReadOffset(JNIEnv *env, std::string dexlist, size_t *addr, char **funcs, size_t 
     //=================Read Offset===============================
     string suffix = filename.substr(filename.find_last_of('.') + 1);
     //LOGD("The suffix is %s", suffix.c_str());
-    //map file
+    //map file in memory
     int fd;
     struct stat sb;
     if((access(filename.c_str(),F_OK))==-1)
@@ -188,7 +184,7 @@ ReadOffset(JNIEnv *env, std::string dexlist, size_t *addr, char **funcs, size_t 
         //exit(0);
     }
     LOGD("size: %d of filename %s, loaded at %p",sb.st_size,filename.c_str(),s);
-    //fclose(reinterpret_cast<FILE *>(fd));
+    // ==================Read oat library==========================
     if (!strcmp(suffix.c_str(), "oat") || !strcmp(suffix.c_str(), "odex")) {
         ReadOatOffset(env, s, dexlist, addr, funcs, filename, length, current_length,camera_list,audio_list);
     }

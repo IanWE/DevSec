@@ -52,15 +52,10 @@ public class Register extends AppCompatActivity{
                 Adler32 adl = new Adler32();
                 adl.update(email.getBytes());
                 source = email+"_"+adl.getValue();
-                //Log.e("RSA", source);
-                //String s="abc";
-                //byte[] b=s.getByte();
-                //String s1=new String(b);
 
                 InputStream inPublic = getResources().getAssets().open("public.pem");
                 PublicKey publicKey = RSA.loadPublicKey(inPublic);
                 byte[] encryptByte = RSA.encryptData(source.getBytes(), publicKey);
-                // 为了方便观察吧加密后的数据用base64加密转一下，要不然看起来是乱码,所以解密是也是要用Base64先转换
                 String afterencrypt = Base64Utils.encode(encryptByte);
                 Log.d("RSA", afterencrypt);
 

@@ -33,16 +33,11 @@ import static android.content.Context.MODE_PRIVATE;
 import static com.SMU.DevSec.MainActivity.SIZE_LIMIT;
 import static com.SMU.DevSec.MainActivity.isCollected;
 
-/**
- * @CreateBy HaiyuKing
- * @Used android 获取文件夹或文件的大小 以B、KB、MB、GB 为单位
- * @参考资料 http://blog.csdn.net/jiaruihua_blog/article/details/13622939
- */
 public class Utils {
-    public static final int SIZETYPE_B = 1;//获取文件大小单位为B的double值
-    public static final int SIZETYPE_KB = 2;//获取文件大小单位为KB的double值
-    public static final int SIZETYPE_MB = 3;//获取文件大小单位为MB的double值
-    public static final int SIZETYPE_GB = 4;//获取文件大小单位为GB的double值
+    public static final int SIZETYPE_B = 1;
+    public static final int SIZETYPE_KB = 2;
+    public static final int SIZETYPE_MB = 3;
+    public static final int SIZETYPE_GB = 4;
     private static final String TAG = "Utils";
     public static final String DATABASE_PATH = "/data/data/com.SMU.DevSec/databases/";
     private final String FILE_PATH = "/data/data/com.SMU.DevSec/files/";
@@ -50,10 +45,10 @@ public class Utils {
     public static final String TEMP_DATABASE = "TempDatabase.db";
     public static boolean compressing=false;
     /**
-     * 获取指定文件或指定文件夹的的指定单位的大小
-     * @param filePath 文件路径
-     * @param sizeType 获取大小的类型1为B、2为KB、3为MB、4为GB
-     * @return double值的大小
+     * Get target file size
+     * @param filePath path
+     * @param sizeType 1 for B、2 for KB、3 for MB、4 forGB
+     * @return double value
      */
     public static double getFolderOrFileSize(String filePath,int sizeType){
         File file=new File(filePath);
@@ -68,12 +63,12 @@ public class Utils {
             e.printStackTrace();
             Log.e("获取文件大小","获取失败!");
         }
-        return FormetFileSize(blockSize, sizeType);
+        return FormatFileSize(blockSize, sizeType);
     }
     /**
-     * 调用此方法自动计算指定文件或指定文件夹的大小
-     * @param filePath 文件路径
-     * @return 计算好的带B、KB、MB、GB的字符串
+     * call this function to get target file size
+     * @param filePath file path
+     * @return String of "Size with G/M/KB"
      */
     public static String getAutoFolderOrFileSize(String filePath){
         File file=new File(filePath);
@@ -88,10 +83,10 @@ public class Utils {
             e.printStackTrace();
             Log.e("获取文件大小","获取失败!");
         }
-        return FormetFileSize(blockSize);
+        return FormatFileSize(blockSize);
     }
     /**
-     * 获取指定文件的大小
+     * Get File Size
      * @param file
      * @return
      * @throws Exception
@@ -114,7 +109,7 @@ public class Utils {
     }
 
     /**
-     * 获取指定文件夹的大小
+     * Get Folder Size
      * @param file
      * @return
      * @throws Exception
@@ -134,11 +129,11 @@ public class Utils {
         return size;
     }
     /**
-     * 转换文件大小
+     * Format File Size
      * @param fileSize
      * @return
      */
-    private static String FormetFileSize(long fileSize)
+    private static String FormatFileSize(long fileSize)
     {
         DecimalFormat df = new DecimalFormat("#.00");
         String fileSizeString = "";
@@ -161,12 +156,12 @@ public class Utils {
         return fileSizeString;
     }
     /**
-     * 转换文件大小,指定转换的类型
+     * Format file size
      * @param fileSize
      * @param sizeType
      * @return
      */
-    private static float FormetFileSize(long fileSize,int sizeType)
+    private static float FormatFileSize(long fileSize,int sizeType)
     {
         DecimalFormat df = new DecimalFormat("#.00");
         float fileSizeLong = 0;
@@ -220,7 +215,7 @@ public class Utils {
         File database = mContext.getDatabasePath(DATABASE_FILENAME);
         float size = 0;
         try {
-            size = FormetFileSize(getFileSize(database),3);
+            size = FormatFileSize(getFileSize(database),3);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -279,13 +274,20 @@ public class Utils {
         db.setLocale(locale);
         db.execSQL("delete from " + SideChannelContract.TABLE_NAME);
         db.execSQL("delete from " + SideChannelContract.GROUND_TRUTH);
-        db.execSQL("delete from " + SideChannelContract.USER_FEEDBACK);
+        db.execSQL("DROP TABLE " + SideChannelContract.USER_FEEDBACK);
         db.execSQL("delete from " + SideChannelContract.SIDE_COMPILER);
         db.execSQL("delete from " + SideChannelContract.FRONT_APP);
+        String sSQL = "CREATE TABLE IF NOT EXISTS " + SideChannelContract.USER_FEEDBACK+ " (" +
+                SideChannelContract.Columns.ARISINGTIME + " INTEGER NOT NULL, " +
+                SideChannelContract.Columns.EVENT + " INTEGER, "+
+                SideChannelContract.Columns.CURRENT_APP + " INTEGER, "+
+                SideChannelContract.Columns.ANSWERINGTIME + " INTEGER, "+
+                SideChannelContract.Columns.CHOICES + " INTEGER, "+
+                SideChannelContract.Columns.PATTERN + " INTEGER); ";
+        db.execSQL(sSQL);
         db.close();
         Log.d(TAG, "Reinitialized Database");
     }
-
 
     public static String readSaveFile(String filename, Context mContext) {
         InputStream inputStream;
