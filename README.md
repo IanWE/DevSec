@@ -46,13 +46,13 @@ This is for online classification, not be used anymore.
 -------------------------------------------------------------------------------------------
 
 
-### native-lib.cpp 
+### native-lib.cpp*
 This file contains interface functions with java, such as initializing the setting(Java_com_SMU_DevSec_CacheScan_init), scanning(Java_com_SMU_DevSec_SideChannelJob_sca), trial mode check(Java_com_SMU_DevSec_TrialModelStages_trial1).   
 
 ### CheckFlags.cpp
 This file contains all data fetching functions, such as Java_com_SMU_DevSec_CacheScan_GetPattern to get the activated pattern.
 
-### libflush
+### libflush*
 this is armageddon lib, which is to get the access time of some functions. If the access time of a function is less than threshold, we think it is activated.
 
 ### ReadOffset.cpp, oat-parser lib and dexinfo lib
