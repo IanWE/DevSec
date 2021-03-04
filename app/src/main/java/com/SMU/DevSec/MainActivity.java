@@ -1,3 +1,11 @@
+/*
+This is the entry file of the application. 
+The whole logic is :
+1. Ask for 'Usage Stats' permisson, and do items check if applicable.
+2. Ask for registration if applicable.
+3. If registered but not finish the trial mode, turn to the trial mode if applicable.
+4. Once finish the trail mode, application will schedule a foreground service to start scanning.
+*/
 package com.SMU.DevSec;
 
 import androidx.appcompat.app.AppCompatActivity;
