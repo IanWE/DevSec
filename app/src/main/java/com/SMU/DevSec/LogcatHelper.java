@@ -1,3 +1,6 @@
+/*
+Class for collecting Logs if applicable.
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
