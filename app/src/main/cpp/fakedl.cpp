@@ -1,3 +1,6 @@
+/*
+Since dlopen is not available for android, this is a fakedl to read the offset of functions.
+*/
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/mman.h>
