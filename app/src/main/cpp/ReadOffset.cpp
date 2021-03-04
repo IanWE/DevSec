@@ -1,3 +1,6 @@
+/*
+Parse the oat file and dexfile to get the addresses of functions in the memory.
+*/
 #include <jni.h>
 
 #include <string>
