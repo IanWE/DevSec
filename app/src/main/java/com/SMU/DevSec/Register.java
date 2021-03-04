@@ -1,3 +1,8 @@
+/*
+This class is for user to register with their email.
+when users registered with their emails, we first calculate the adler and append the adler to the end of the email. 
+After that, we use a RSA to encrypte the string and send to the server.
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
