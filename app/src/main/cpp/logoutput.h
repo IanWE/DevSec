@@ -1,3 +1,6 @@
+/*
+For logging output
+*/
 #include <android/log.h>
 
 #define TAG "CacheScan_Main" // 这个是自定义的LOG的标识
