@@ -1,3 +1,9 @@
+/*
+This file contains interface functions with java, such as 
+initializing the setting(Java_com_SMU_DevSec_CacheScan_init), 
+scanning(Java_com_SMU_DevSec_SideChannelJob_scan), 
+trial mode check(Java_com_SMU_DevSec_TrialModelStages_trial1).  
+*/
 #include <jni.h>
 #include <string>
 #include <cstring>
