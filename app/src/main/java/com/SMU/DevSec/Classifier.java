@@ -1,3 +1,6 @@
+/*
+This is for online classifying, deprecated now.
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
