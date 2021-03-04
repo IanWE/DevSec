@@ -1,5 +1,5 @@
 /*
-Class for collecting Logs if applicable.
+Class for collecting logs.
 */
 package com.SMU.DevSec;
 
