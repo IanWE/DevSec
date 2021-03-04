@@ -1,6 +1,7 @@
-//
-// Created by Jianwen on 20-8-16.
-//
+/*
+This file contains all tools functions for android, 
+such as Java_com_SMU_DevSec_CacheScan_GetPattern to get the activated pattern etc.
+*/
 #include <jni.h>
 #include <ostream>
 #include <pthread.h>
