@@ -1,3 +1,6 @@
+/*
+This is a foreground service for scanning, side channel information collection and notificaiton poping. 
+*/
 package com.SMU.DevSec;
 
 import android.annotation.SuppressLint;
