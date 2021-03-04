@@ -1,3 +1,6 @@
+/*
+This is the file to require permisson
+*/
 package com.SMU.DevSec;
 
 import android.app.AlertDialog;
