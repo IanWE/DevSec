@@ -1,3 +1,6 @@
+/*
+Schedule a timer to upload the dataset or logs in an interval
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
