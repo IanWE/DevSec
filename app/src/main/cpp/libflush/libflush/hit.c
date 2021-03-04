@@ -1,5 +1,7 @@
 /* See LICENSE file for license and copyright information */
-
+/*
+Keep scanning functions to get the access time to check if there are functions activated(used by other app).
+*/
 #define _GNU_SOURCE
 
 #include <stdio.h>
