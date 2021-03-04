@@ -1,3 +1,6 @@
+/*
+As the name
+*/
 package com.SMU.DevSec;
 
 import android.app.NotificationManager;
