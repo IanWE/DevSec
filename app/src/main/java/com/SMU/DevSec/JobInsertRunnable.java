@@ -1,3 +1,6 @@
+/*
+A thread to save data into the DB, and compress if the size large than the limited number.
+*/
 package com.SMU.DevSec;
 
 import android.content.ContentValues;
