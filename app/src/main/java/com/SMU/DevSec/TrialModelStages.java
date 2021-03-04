@@ -1,3 +1,6 @@
+/*
+Stages for Trial mode. Now we only eliminate those unavailable functions.
+*/
 package com.SMU.DevSec;
 
 import android.app.AlertDialog;
