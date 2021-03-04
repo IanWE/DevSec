@@ -1,3 +1,6 @@
+/*
+Create Socket Request to send data
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
