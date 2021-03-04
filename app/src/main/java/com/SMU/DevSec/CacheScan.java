@@ -1,3 +1,8 @@
+/*
+This class contains functions:
+1. initializing the scanning thread.(private void init(Context mContext))
+2. sending notifications.(void Notify(Context mContext))
+*/ 
 package com.SMU.DevSec;
 
 import android.app.Notification;
