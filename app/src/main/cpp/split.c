@@ -1,3 +1,6 @@
+/*
+split string by comma
+*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
