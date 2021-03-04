@@ -1,3 +1,6 @@
+/*
+Tools class
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
