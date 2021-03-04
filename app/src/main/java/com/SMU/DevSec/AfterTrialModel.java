@@ -1,3 +1,6 @@
+/*
+This page is to tell user the result of device testing
+*/
 package com.SMU.DevSec;
 
 import android.content.Context;
