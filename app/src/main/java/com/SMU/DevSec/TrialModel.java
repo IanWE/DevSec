@@ -1,3 +1,6 @@
+/*
+Trial mode to do the device check.
+*/
 package com.SMU.DevSec;
 
 import android.content.Intent;
