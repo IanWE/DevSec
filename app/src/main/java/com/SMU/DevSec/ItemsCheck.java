@@ -1,3 +1,6 @@
+/*
+This class will show some clauses for user to check.
+*/
 package com.SMU.DevSec;
 
 import android.app.AlertDialog;
