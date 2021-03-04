@@ -1,5 +1,5 @@
 /*
-Stages for Trial mode. Now we only eliminate those unavailable functions.
+Stages for Trial mode. 
 */
 package com.SMU.DevSec;
 
