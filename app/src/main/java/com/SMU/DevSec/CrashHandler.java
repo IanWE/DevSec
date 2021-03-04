@@ -1,3 +1,6 @@
+/*
+Collect crash errors and send to server
+*/
 package com.SMU.DevSec;
 
 import android.app.ActivityManager;
