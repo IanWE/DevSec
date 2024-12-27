@@ -1,3 +1,5 @@
+Due to the page limit, we are not able to include the full list of functions scanned in our experiment. We therefore decide to provide a link to the separate supplementary file. We must emphasize that our list is refined specifically for the tested devices (see Section IV.A for the our procedure in refining the list, Section VI.A for the in-lab tested devices, and Table II for phone models involved in the user study). It is unlikely to be universally applicable for all devices.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 AccountManagerService.java_getAccountsAndVisibilityForPackage
 AccountManagerService.java_logAddAccountMetrics
 GnssLocationProvider.java_onNetworkAvailable
